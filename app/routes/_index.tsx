@@ -1,48 +1,40 @@
-import type { MetaFunction } from "@remix-run/node";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { Link, redirect } from "@remix-run/react";
+import { authCookie } from "~/auth";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "PlaGeA" },
+    { name: "description", content: "Plataforma de Gestão de Amostras" },
   ];
 };
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  const cookieString = request.headers.get("Cookie");
+  const userId = await authCookie.parse(cookieString);
+  if (userId) {
+    throw redirect("/home");
+  }
+  return null;
+}   
+
 export default function Index() {
   return (
-    <div className="font-sans p-4">
-      <h1 className="text-3xl">Welcome to Remix</h1>
-      <ul className="list-disc mt-4 pl-6 space-y-2">
-        <li>
-          <a
-            className="text-blue-700 underline visited:text-purple-900"
-            target="_blank"
-            href="https://remix.run/start/quickstart"
-            rel="noreferrer"
-          >
-            5m Quick Start
-          </a>
-        </li>
-        <li>
-          <a
-            className="text-blue-700 underline visited:text-purple-900"
-            target="_blank"
-            href="https://remix.run/start/tutorial"
-            rel="noreferrer"
-          >
-            30m Tutorial
-          </a>
-        </li>
-        <li>
-          <a
-            className="text-blue-700 underline visited:text-purple-900"
-            target="_blank"
-            href="https://remix.run/docs"
-            rel="noreferrer"
-          >
-            Remix Docs
-          </a>
-        </li>
-      </ul>
+    <div className="h-full flex flex-col items-center pt-20 bg-slate-900">
+      <div className="space-y-4 max-w-md text-lg text-slate-300">
+        <p>
+          Esta é uma plataforma completa, desenvolvida pela Faculdade de Medicina da Universidade Eduardo Mondlane (UEM), com o objetivo de facilitar a gestão de amostras.
+        </p>
+        <p>Para começar a utilizar a plataforma, basta clicar em “Iniciar sessão”.</p>
+      </div>
+      <div className="flex w-full justify-evenly max-w-md mt-8 rounded-3xl p-10 bg-slate-800">
+        <Link
+          to="/login"
+          className="text-xl font-medium text-brand-aqua underline"
+        >
+          Iniciar sessão
+        </Link>
+      </div>
     </div>
   );
 }
