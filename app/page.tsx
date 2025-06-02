@@ -1,5 +1,5 @@
 export default function Home() {
   return (
-    <button>Click aqui!</button>
+    <button className="bg-red-200">Click aqui!</button>
   );
 }
