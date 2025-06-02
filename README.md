@@ -12,6 +12,12 @@ yarn dev
 pnpm dev
 # or
 bun dev
+
+pnpm i
+pnpm build
+
+pm2 start ecosystem.config.js
+pm2 save
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
