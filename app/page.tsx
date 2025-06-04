@@ -1,12 +1,18 @@
+import { TodoList } from "@/components/todo-list"
+import { AddTodoForm } from "@/components/add-todo-form"
+
 export default function Home() {
   return (
-    <>
-      <h1 className="text-3xl font-bold underline">
-        Welcome to Next.js with Tailwind CSS!
-      </h1>
-      <p className="mt-4 text-lg">
-        This is a simple example of a Next.js page styled with Tailwind CSS!
-      </p>
-    </>
-  );
+    <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold tracking-tight">Todo App</h1>
+          <p className="text-muted-foreground mt-2">A simple Next.js app with MongoDB integration</p>
+        </div>
+
+        <AddTodoForm />
+        <TodoList />
+      </div>
+    </main>
+  )
 }
