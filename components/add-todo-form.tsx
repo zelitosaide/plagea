@@ -7,7 +7,6 @@ import { useState } from "react"
 export function AddTodoForm() {
   const [title, setTitle] = useState("")
   const [loading, setLoading] = useState(false)
-  // const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,19 +22,10 @@ export function AddTodoForm() {
 
       if (response.ok) {
         setTitle("")
-        // toast({
-        //   title: "Success",
-        //   description: "Todo added successfully",
-        // })
-        // Refresh the page to show the new todo
         window.location.reload()
       }
     } catch (error) {
-      // toast({
-      //   title: "Error",
-      //   description: "Failed to add todo",
-      //   variant: "destructive",
-      // })
+      console.error("Failed to add todo:", error)
     } finally {
       setLoading(false)
     }
