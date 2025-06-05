@@ -5,7 +5,7 @@ import { MongoClient, type Db } from "mongodb"
 // }
 
 // const uri = process.env.MONGODB_URI
-const uri = "mongodb://admin:Admin1234!1@127.0.0.1:27017/fameddbv3?authSource=admin"
+const uri = "mongodb://admin:Admin1234!1@127.0.0.1:27017/todoapp?authSource=admin"
 const options = {}
 
 let client: MongoClient
