@@ -13,276 +13,14 @@ import {
   useSearchParams
 } from "next/navigation"
 
-// Mock data for samples
-const mockSampleData = [
-  {
-    id: "1",
-    patientCode: "PT-2024-001",
-    sampleType: "Blood Serum",
-    project: "COVID-19 Study",
-    freezerId: "F1",
-    shelf: "S2",
-    box: "B3",
-    position: "P15",
-    entryDate: "2024-01-15",
-    expiryDate: "2024-07-15",
-    notes: "High priority sample",
-  },
-  {
-    id: "2",
-    patientCode: "PT-2024-002",
-    sampleType: "Plasma",
-    project: "Diabetes Research",
-    freezerId: "F2",
-    shelf: "S1",
-    box: "B1",
-    position: "P8",
-    entryDate: "2024-01-14",
-    expiryDate: "2024-06-14",
-    notes: "Control sample",
-  },
-  {
-    id: "3",
-    patientCode: "PT-2024-003",
-    sampleType: "DNA",
-    project: "Genetic Analysis",
-    freezerId: "F1",
-    shelf: "S1",
-    box: "B2",
-    position: "P5",
-    entryDate: "2024-01-13",
-    expiryDate: "2025-01-13",
-    notes: "Long-term storage",
-  },
-  {
-    id: "4",
-    patientCode: "PT-2024-004",
-    sampleType: "RNA",
-    project: "Genetic Analysis",
-    freezerId: "F3",
-    shelf: "S3",
-    box: "B1",
-    position: "P12",
-    entryDate: "2024-01-12",
-    expiryDate: "2024-08-12",
-    notes: "Research sample",
-  },
-  {
-    id: "5",
-    patientCode: "PT-2024-005",
-    sampleType: "Tissue",
-    project: "Cancer Research",
-    freezerId: "F4",
-    shelf: "S1",
-    box: "B5",
-    position: "P3",
-    entryDate: "2024-01-11",
-    expiryDate: "2025-01-11",
-    notes: "Biopsy sample",
-  },
-  {
-    id: "6",
-    patientCode: "PT-2024-006",
-    sampleType: "Blood Serum",
-    project: "COVID-19 Study",
-    freezerId: "F1",
-    shelf: "S2",
-    box: "B4",
-    position: "P7",
-    entryDate: "2024-01-10",
-    expiryDate: "2024-07-10",
-    notes: "Patient follow-up sample",
-  },
-  {
-    id: "7",
-    patientCode: "PT-2024-007",
-    sampleType: "Plasma",
-    project: "Cardiovascular Study",
-    freezerId: "F2",
-    shelf: "S2",
-    box: "B2",
-    position: "P14",
-    entryDate: "2024-01-09",
-    expiryDate: "2024-06-09",
-    notes: "Pre-treatment sample",
-  },
-  {
-    id: "8",
-    patientCode: "PT-2024-008",
-    sampleType: "DNA",
-    project: "Genetic Analysis",
-    freezerId: "F3",
-    shelf: "S1",
-    box: "B3",
-    position: "P9",
-    entryDate: "2024-01-08",
-    expiryDate: "2025-01-08",
-    notes: "Family study participant",
-  },
-  {
-    id: "9",
-    patientCode: "PT-2024-009",
-    sampleType: "RNA",
-    project: "Cancer Research",
-    freezerId: "F4",
-    shelf: "S2",
-    box: "B1",
-    position: "P18",
-    entryDate: "2024-01-07",
-    expiryDate: "2024-08-07",
-    notes: "Tumor sample",
-  },
-  {
-    id: "10",
-    patientCode: "PT-2024-010",
-    sampleType: "Tissue",
-    project: "Cancer Research",
-    freezerId: "F1",
-    shelf: "S3",
-    box: "B2",
-    position: "P11",
-    entryDate: "2024-01-06",
-    expiryDate: "2025-01-06",
-    notes: "Normal tissue control",
-  },
-  {
-    id: "11",
-    patientCode: "PT-2024-011",
-    sampleType: "Blood Serum",
-    project: "Diabetes Research",
-    freezerId: "F2",
-    shelf: "S1",
-    box: "B3",
-    position: "P22",
-    entryDate: "2024-01-05",
-    expiryDate: "2024-07-05",
-    notes: "Baseline measurement",
-  },
-  {
-    id: "12",
-    patientCode: "PT-2024-012",
-    sampleType: "Plasma",
-    project: "COVID-19 Study",
-    freezerId: "F3",
-    shelf: "S2",
-    box: "B4",
-    position: "P6",
-    entryDate: "2024-01-04",
-    expiryDate: "2024-06-04",
-    notes: "Convalescent plasma",
-  },
-  {
-    id: "13",
-    patientCode: "PT-2024-013",
-    sampleType: "DNA",
-    project: "Cardiovascular Study",
-    freezerId: "F4",
-    shelf: "S1",
-    box: "B1",
-    position: "P25",
-    entryDate: "2024-01-03",
-    expiryDate: "2025-01-03",
-    notes: "Genetic risk assessment",
-  },
-  {
-    id: "14",
-    patientCode: "PT-2024-014",
-    sampleType: "RNA",
-    project: "Genetic Analysis",
-    freezerId: "F1",
-    shelf: "S2",
-    box: "B5",
-    position: "P13",
-    entryDate: "2024-01-02",
-    expiryDate: "2024-08-02",
-    notes: "Expression analysis",
-  },
-  {
-    id: "15",
-    patientCode: "PT-2024-015",
-    sampleType: "Tissue",
-    project: "Diabetes Research",
-    freezerId: "F2",
-    shelf: "S3",
-    box: "B1",
-    position: "P4",
-    entryDate: "2024-01-01",
-    expiryDate: "2025-01-01",
-    notes: "Pancreatic tissue",
-  },
-  {
-    id: "16",
-    patientCode: "PT-2024-016",
-    sampleType: "Blood Serum",
-    project: "Cancer Research",
-    freezerId: "F3",
-    shelf: "S1",
-    box: "B2",
-    position: "P19",
-    entryDate: "2023-12-31",
-    expiryDate: "2024-06-30",
-    notes: "Post-surgery sample",
-  },
-  {
-    id: "17",
-    patientCode: "PT-2024-017",
-    sampleType: "Plasma",
-    project: "Genetic Analysis",
-    freezerId: "F4",
-    shelf: "S2",
-    box: "B3",
-    position: "P8",
-    entryDate: "2023-12-30",
-    expiryDate: "2024-06-29",
-    notes: "Rare variant carrier",
-  },
-  {
-    id: "18",
-    patientCode: "PT-2024-018",
-    sampleType: "DNA",
-    project: "COVID-19 Study",
-    freezerId: "F1",
-    shelf: "S3",
-    box: "B4",
-    position: "P16",
-    entryDate: "2023-12-29",
-    expiryDate: "2024-12-29",
-    notes: "Long COVID study",
-  },
-  {
-    id: "19",
-    patientCode: "PT-2024-019",
-    sampleType: "RNA",
-    project: "Cardiovascular Study",
-    freezerId: "F2",
-    shelf: "S1",
-    box: "B5",
-    position: "P21",
-    entryDate: "2023-12-28",
-    expiryDate: "2024-07-28",
-    notes: "Heart failure patient",
-  },
-  {
-    id: "20",
-    patientCode: "PT-2024-020",
-    sampleType: "Tissue",
-    project: "Cancer Research",
-    freezerId: "F3",
-    shelf: "S2",
-    box: "B1",
-    position: "P10",
-    entryDate: "2023-12-27",
-    expiryDate: "2024-12-27",
-    notes: "Metastatic sample",
-  },
-]
 
 interface Sample {
-  id: string
+  _id: string
   patientCode: string
   sampleType: string
   project: string
   freezerId: string
+  freezerCode: string
   shelf: string
   box: string
   position: string
@@ -295,7 +33,7 @@ export default function SamplesPage() {
   // const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [samples, setSamples] = useState<Sample[]>(mockSampleData)
+  const [samples, setSamples] = useState<Sample[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
@@ -338,7 +76,7 @@ export default function SamplesPage() {
 
     const matchesType = filterType === "all" || sample.sampleType === filterType
     const matchesProject = filterProject === "all" || sample.project === filterProject
-    const matchesFreezer = !freezerFilter || sample.freezerId === freezerFilter
+    const matchesFreezer = !freezerFilter || sample.freezerId === freezerFilter.split(":")[0]
 
     return matchesSearch && matchesType && matchesProject && matchesFreezer
   })
@@ -409,8 +147,23 @@ export default function SamplesPage() {
     )
 
     if (confirmed) {
-      setSamples((prevSamples) => prevSamples.filter((s) => s.id !== sample.id))
-      alert(`Sample ${sample.patientCode} has been deleted successfully.`)
+      // Call API to delete sample
+      try {
+        fetch(`/api/samples/${sample._id}`, {
+          method: "DELETE",
+        }).then((response) => {
+          if (response.ok) {
+            alert("Sample deleted successfully")
+            // Refresh samples
+            fetchSamples()
+          } else {
+            alert("Failed to delete sample")
+          }
+        })
+      } catch (error) {
+        console.error("Error deleting sample:", error)
+        alert("Failed to delete sample")
+      }
     }
   }
 
@@ -419,13 +172,7 @@ export default function SamplesPage() {
   }
 
   const getFreezerName = (freezerId: string) => {
-    const freezerNames: { [key: string]: string } = {
-      F1: "Main Lab Freezer",
-      F2: "Backup Freezer",
-      F3: "Long-term Storage",
-      F4: "Research Freezer",
-    }
-    return freezerNames[freezerId] || freezerId
+    return freezerId ? freezerId.split(":")[1] || "Unknown Freezer" : "All Freezers"
   }
 
   // Handle search and filter changes
@@ -440,6 +187,26 @@ export default function SamplesPage() {
   const handleProjectChange = (value: string) => {
     setFilterProject(value)
   }
+
+  const fetchSamples = async () => {
+    try {
+      const response = await fetch("/api/samples")
+      if (response.ok) {
+        const data = await response.json()
+        setSamples(data)
+        console.log(data);
+      }
+    } catch (error) {
+      alert("Falha ao buscar amostras")
+      console.log("Error fetching samples:", error)
+    } finally {
+      // setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchSamples();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -553,7 +320,7 @@ export default function SamplesPage() {
                   </div>
                 ) : (
                   currentSamples.map((sample) => (
-                    <div key={sample.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div key={sample._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -567,7 +334,7 @@ export default function SamplesPage() {
                                 <span className="font-medium">Projecto:</span> {sample.project}
                               </p>
                               <p>
-                                <span className="font-medium">Localização:</span> {sample.freezerId}-{sample.shelf}-
+                                <span className="font-medium">Localização:</span> {sample.freezerCode}-{sample.shelf}-
                                 {sample.box}-{sample.position}
                               </p>
                             </div>
@@ -592,13 +359,13 @@ export default function SamplesPage() {
                             size="sm"
                             onClick={() =>
                               alert(
-                                `Detalhes da Amostra:\nCódigo do Paciente: ${sample.patientCode}\nTipo de Amostra: ${sample.sampleType}\nProjecto: ${sample.project}\nLocalização: ${sample.freezerId}-${sample.shelf}-${sample.box}-${sample.position}\nData de Entrada: ${sample.entryDate}\nData de Validade: ${sample.expiryDate}\nObservações: ${sample.notes}`,
+                                `Detalhes da Amostra:\nCódigo do Paciente: ${sample.patientCode}\nTipo de Amostra: ${sample.sampleType}\nProjecto: ${sample.project}\nLocalização: ${sample.freezerCode}-${sample.shelf}-${sample.box}-${sample.position}\nData de Entrada: ${sample.entryDate}\nData de Validade: ${sample.expiryDate}\nObservações: ${sample.notes}`,
                               )
                             }
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Link href={`/samples/edit/${sample.id}`}>
+                          <Link href={`/samples/edit/${sample._id}`}>
                             <Button variant="outline" size="sm">
                               <Edit className="h-4 w-4" />
                             </Button>

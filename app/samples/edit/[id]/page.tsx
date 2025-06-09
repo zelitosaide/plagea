@@ -13,48 +13,17 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
-// Mock sample data
-const mockSampleData = [
-  {
-    id: "1",
-    patientCode: "PT-2024-001",
-    sampleType: "Blood Serum",
-    project: "COVID-19 Study",
-    freezerId: "F1",
-    shelf: "S2",
-    box: "B3",
-    position: "P15",
-    entryDate: "2024-01-15",
-    expiryDate: "2024-07-15",
-    notes: "High priority sample",
-  },
-  {
-    id: "2",
-    patientCode: "PT-2024-002",
-    sampleType: "Plasma",
-    project: "Diabetes Research",
-    freezerId: "F2",
-    shelf: "S1",
-    box: "B1",
-    position: "P8",
-    entryDate: "2024-01-14",
-    expiryDate: "2024-06-14",
-    notes: "Control sample",
-  },
-  {
-    id: "3",
-    patientCode: "PT-2024-003",
-    sampleType: "DNA",
-    project: "Genetic Analysis",
-    freezerId: "F1",
-    shelf: "S1",
-    box: "B2",
-    position: "P5",
-    entryDate: "2024-01-13",
-    expiryDate: "2025-01-13",
-    notes: "Long-term storage",
-  },
-]
+type Freezer = {
+  _id: string
+  code: string
+  name: string
+  location: string
+  temperature: string
+  capacity: number
+  currentSamples: number
+  status: "operational" | "maintenance" | "offline"
+  lastMaintenance: string
+}
 
 export default function EditSamplePage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -66,33 +35,61 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
     sampleType: "",
     project: "",
     freezerId: "",
+    freezerCode: "",
     shelf: "",
     box: "",
+    rightLeft: "",
     position: "",
     notes: "",
+    entryDate: "",
+    expiryDate: "",
   })
 
   const [entryDate, setEntryDate] = useState<Date>(new Date())
   const [expiryDate, setExpiryDate] = useState<Date>()
 
+  const [freezers, setFreezers] = useState<Freezer[]>([])
+
+  const fetchSampleById = async () => {
+    try {
+      const response = await fetch(`/api/samples/${params.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setFormData(data)
+        console.log(data)
+      }
+    } catch (error) {
+      alert("Falha ao buscar a amostra")
+      console.log("Error fetching sample:", error)
+    } finally {
+      // setLoading(false)
+    }
+  }
+
   // Load sample data
   useEffect(() => {
-    const sample = mockSampleData.find((s) => s.id === params.id)
-    if (sample) {
-      setFormData({
-        patientCode: sample.patientCode,
-        sampleType: sample.sampleType,
-        project: sample.project,
-        freezerId: sample.freezerId,
-        shelf: sample.shelf,
-        box: sample.box,
-        position: sample.position,
-        notes: sample.notes,
-      })
-      setEntryDate(new Date(sample.entryDate))
-      setExpiryDate(new Date(sample.expiryDate))
+    fetchSampleById();
+  }, [params.id]);
+
+  const fetchFreezers = async () => {
+    try {
+      const response = await fetch("/api/freezers")
+      if (response.ok) {
+        const data = await response.json()
+        setFreezers(data)
+        console.log(data);
+      }
+    } catch (error) {
+      alert("Falha ao buscar congeladores")
+      console.log("Error fetching freezers:", error)
+    } finally {
+      // setLoading(false)
     }
-  }, [params.id])
+  }
+
+  useEffect(() => {
+    fetchFreezers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -105,8 +102,17 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
     setLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await fetch(`/api/samples/${params.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          entryDate: entryDate.toISOString().split("T")[0],
+          expiryDate: expiryDate?.toISOString().split("T")[0],
+        }),
+      })
       alert("Sample updated successfully!")
       router.push("/samples")
     } catch (error) {
@@ -118,7 +124,16 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    if (field === "freezerId") {
+      const [code, id] = value.split(":")
+      setFormData((prev) => ({
+        ...prev,
+        freezerId: id,
+        freezerCode: code,
+      }))
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
   }
 
   const formatDate = (date: Date) => {
@@ -327,7 +342,7 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
                     className={cn("w-full justify-start text-left font-normal", !entryDate && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {entryDate ? formatDate(entryDate) : "Selecione uma data"}
+                    {formData.entryDate ? formatDate(new Date(formData.entryDate)) : "Selecione uma data"}
                   </Button>
                   {showEntryCalendar && generateCalendar(entryDate, setEntryDate, () => setShowEntryCalendar(false))}
                 </div>
@@ -344,7 +359,7 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
                     className={cn("w-full justify-start text-left font-normal", !expiryDate && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {expiryDate ? formatDate(expiryDate) : "Selecione uma data"}
+                    {formData.expiryDate ? formatDate(new Date(formData.expiryDate)) : "Selecione uma data"}
                   </Button>
                   {showExpiryCalendar &&
                     generateCalendar(expiryDate || new Date(), setExpiryDate, () => setShowExpiryCalendar(false))}
@@ -361,15 +376,24 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="freezerId">ID do Congelador *</Label>
-                  <Select value={formData.freezerId} onValueChange={(value) => handleInputChange("freezerId", value)}>
+                  <Select value={
+                    formData.freezerId ? `${formData.freezerCode}:${formData.freezerId}` : ""
+                  } onValueChange={(value) => handleInputChange("freezerId", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o congelador" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="F1">F1 - Congelador Principal do Laboratório</SelectItem>
-                      <SelectItem value="F2">F2 - Congelador de Reserva</SelectItem>
-                      <SelectItem value="F3">F3 - Armazenamento de Longo Prazo</SelectItem>
-                      <SelectItem value="F4">F4 - Congelador de Pesquisa</SelectItem>
+                      {freezers.length > 0 ? (
+                        freezers.map((freezer) => (
+                          <SelectItem key={freezer._id} value={`${freezer.code}:${freezer._id}`}>
+                            {freezer.code} - {freezer.name}
+                          </SelectItem>
+                        ))
+                      ): (
+                        <SelectItem value="na" disabled>
+                          Nenhum congelador disponível
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -377,60 +401,72 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="shelf">Prateleira *</Label>
-                    <Select value={formData.shelf} onValueChange={(value) => handleInputChange("shelf", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Prateleira" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="S1">S1</SelectItem>
-                        <SelectItem value="S2">S2</SelectItem>
-                        <SelectItem value="S3">S3</SelectItem>
-                        <SelectItem value="S4">S4</SelectItem>
-                        <SelectItem value="S5">S5</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="shelf"
+                      type="number"
+                      value={(formData.shelf).toString().replace("S", "")}
+                      onChange={(e) => handleInputChange("shelf", `S${e.target.value}`)}
+                      placeholder="Prateleira"
+                      min="1"
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="box">Box *</Label>
-                    <Select value={formData.box} onValueChange={(value) => handleInputChange("box", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Box" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 10 }, (_, i) => (
-                          <SelectItem key={i + 1} value={`B${i + 1}`}>
-                            B{i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="box"
+                      type="number"
+                      value={(formData.box).toString().replace("B", "")}
+                      onChange={(e) => handleInputChange("box", `B${e.target.value}`)}
+                      placeholder="Box"
+                      min="1"
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="position">Posição *</Label>
-                    <Select value={formData.position} onValueChange={(value) => handleInputChange("position", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Posição" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 25 }, (_, i) => (
-                          <SelectItem key={i + 1} value={`P${i + 1}`}>
-                            P{i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="position"
+                      type="number"
+                      value={(formData.position).toString().replace("P", "")}
+                      onChange={(e) => handleInputChange("position", `P${e.target.value}`)}
+                      placeholder="Posição"
+                      min="1"
+                    />
                   </div>
                 </div>
 
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
+                <div
+                  className={`rounded-lg p-4 shadow-sm text-card-foreground ${
+                    formData.freezerId &&
+                    formData.shelf &&
+                    formData.rightLeft &&
+                    formData.box &&
+                    formData.position
+                      ? "border border-green-500/30 bg-green-50"
+                      : "border border-yellow-600/30 bg-yellow-50/25"
+                  }`}
+                >
                   <p className="text-sm">
                     <span className="font-medium">Visualização da Localização:</span>{" "}
-                    <span className="text-muted-foreground">
-                      {formData.freezerId && formData.shelf && formData.box && formData.position
-                        ? `${formData.freezerId}-${formData.shelf}-${formData.box}-${formData.position}`
-                        : "Preencha todos os campos para ver a localização"}
+                    <span
+                      className={
+                        formData.freezerId &&
+                        formData.shelf &&
+                        formData.rightLeft &&
+                        formData.box &&
+                        formData.position
+                          ? "text-green-600 font-semibold"
+                          : "text-yellow-600 font-medium"
+                      }
+                    >
+                      {formData.freezerId &&
+                      formData.shelf &&
+                      formData.rightLeft &&
+                      formData.box &&
+                      formData.position
+                        ? `${freezers.find((f) => f._id === formData.freezerId)?.code || ""}-${formData.shelf}-${formData.rightLeft}-${formData.box}-${formData.position}`
+                        : "Complete all fields to see location"}
                     </span>
                   </p>
                 </div>

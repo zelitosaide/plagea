@@ -23,74 +23,6 @@ import {
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-// Mock freezer data
-const mockFreezerData = [
-  {
-    id: "F1",
-    name: "Main Lab Freezer",
-    location: "Lab Room A",
-    temperature: "-80°C",
-    capacity: 500,
-    currentSamples: 387,
-    status: "operational",
-    lastMaintenance: "2024-01-10",
-    nextMaintenance: "2024-04-10",
-    alertsEnabled: true,
-    temperatureAlerts: true,
-    maintenanceAlerts: true,
-    capacityThreshold: 90,
-    notes: "Primary storage for COVID-19 study samples",
-  },
-  {
-    id: "F2",
-    name: "Backup Freezer",
-    location: "Lab Room B",
-    temperature: "-80°C",
-    capacity: 300,
-    currentSamples: 156,
-    status: "operational",
-    lastMaintenance: "2024-01-08",
-    nextMaintenance: "2024-04-08",
-    alertsEnabled: true,
-    temperatureAlerts: true,
-    maintenanceAlerts: false,
-    capacityThreshold: 85,
-    notes: "Backup storage unit",
-  },
-  {
-    id: "F3",
-    name: "Long-term Storage",
-    location: "Storage Room",
-    temperature: "-150°C",
-    capacity: 1000,
-    currentSamples: 234,
-    status: "operational",
-    lastMaintenance: "2024-01-12",
-    nextMaintenance: "2024-04-12",
-    alertsEnabled: true,
-    temperatureAlerts: true,
-    maintenanceAlerts: true,
-    capacityThreshold: 95,
-    notes: "Ultra-low temperature storage for long-term samples",
-  },
-  {
-    id: "F4",
-    name: "Research Freezer",
-    location: "Research Lab",
-    temperature: "-80°C",
-    capacity: 400,
-    currentSamples: 298,
-    status: "maintenance",
-    lastMaintenance: "2024-01-05",
-    nextMaintenance: "2024-02-05",
-    alertsEnabled: false,
-    temperatureAlerts: false,
-    maintenanceAlerts: true,
-    capacityThreshold: 80,
-    notes: "Currently under maintenance - compressor replacement",
-  },
-]
-
 export default function FreezerSettingsPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -100,6 +32,7 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
     temperature: "",
     capacity: "",
     status: "",
+    currentSamples: 0,
     notes: "",
     alertsEnabled: false,
     temperatureAlerts: false,
@@ -111,25 +44,27 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
   const [nextMaintenance, setNextMaintenance] = useState("")
 
   // Load freezer data
-  useEffect(() => {
-    const freezer = mockFreezerData.find((f) => f.id === params.id)
-    if (freezer) {
-      setFormData({
-        name: freezer.name,
-        location: freezer.location,
-        temperature: freezer.temperature,
-        capacity: freezer.capacity.toString(),
-        status: freezer.status,
-        notes: freezer.notes,
-        alertsEnabled: freezer.alertsEnabled,
-        temperatureAlerts: freezer.temperatureAlerts,
-        maintenanceAlerts: freezer.maintenanceAlerts,
-        capacityThreshold: freezer.capacityThreshold,
-      })
-      setLastMaintenance(freezer.lastMaintenance)
-      setNextMaintenance(freezer.nextMaintenance)
+  const fetchFreezerById = async () => {
+    try {
+      const response = await fetch(`/api/freezers/${params.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setFormData(data)
+        setLastMaintenance(data.lastMaintenance)
+        setNextMaintenance(data.nextMaintenance)
+      }
+    } catch (error) {
+      alert("Falha ao buscar congelador")
+      console.log("Error fetching freezer:", error)
+    } finally {
+      // setLoading(false)
     }
-  }, [params.id])
+  }
+
+  // Load sample data
+  useEffect(() => {
+    fetchFreezerById();
+  }, [params.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -138,11 +73,11 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      alert("Freezer settings updated successfully!")
+      alert("Configurações do freezer atualizadas com sucesso!")
       router.push("/freezers")
     } catch (error) {
-      console.error("Error updating freezer settings:", error)
-      alert("Failed to update freezer settings")
+      console.error("Falha ao atualizar as configurações do freezer:", error)
+      alert("Falha ao atualizar as configurações do freezer")
     } finally {
       setLoading(false)
     }
@@ -167,7 +102,7 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
 
   const utilizationPercentage =
     Math.round(
-      (mockFreezerData.find((f) => f.id === params.id)?.currentSamples || 0) /
+      (formData.currentSamples || 0) /
         Number.parseInt(formData.capacity || "1"),
     ) * 100
 
@@ -179,13 +114,14 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
             <Link href="/freezers">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Freezers
+                Voltar para Congeladores
               </Button>
             </Link>
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 {/* <Settings className="h-6 w-6" /> */}
-                Freezer Settings - {params.id}
+                {/* Freezer Settings - {params.id} */}
+                Configurações do Congelador - {formData.name}
               </h1>
               {/* <p className="text-gray-600">Configure freezer parameters and monitoring settings</p> */}
             </div>
@@ -199,53 +135,53 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Thermometer className="h-5 w-5" />
-                  Basic Information
+                  Informações Básicas
                 </CardTitle>
-                <CardDescription>Update freezer identification and location details</CardDescription>
+                <CardDescription>Atualizar a identificação e os detalhes de localização do freezer</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Freezer Name *</Label>
+                  <Label htmlFor="name">Nome do Congelador *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Main Lab Freezer"
+                    placeholder="Congelador Principal do Laboratório"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location *</Label>
+                  <Label htmlFor="location">Localização *</Label>
                   <Input
                     id="location"
                     value={formData.location}
                     onChange={(e) => handleInputChange("location", e.target.value)}
-                    placeholder="Lab Room A"
+                    placeholder="Sala de Laboratório A"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="temperature">Temperature *</Label>
+                  <Label htmlFor="temperature">Temperatura *</Label>
                   <Select
                     value={formData.temperature}
                     onValueChange={(value) => handleInputChange("temperature", value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select temperature" />
+                      <SelectValue placeholder="Selecionar temperatura" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="-20°C">-20°C</SelectItem>
                       <SelectItem value="-80°C">-80°C</SelectItem>
                       <SelectItem value="-150°C">-150°C</SelectItem>
-                      <SelectItem value="-196°C">-196°C (Liquid Nitrogen)</SelectItem>
+                      <SelectItem value="-196°C">-196°C (Nitrogênio Líquido)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="capacity">Capacity (samples) *</Label>
+                  <Label htmlFor="capacity">Capacidade (amostras) *</Label>
                   <Input
                     id="capacity"
                     type="number"
@@ -261,12 +197,12 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
                   <Label htmlFor="status">Status</Label>
                   <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue placeholder="Selecionar status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="operational">Operational</SelectItem>
-                      <SelectItem value="maintenance">Maintenance</SelectItem>
-                      <SelectItem value="offline">Offline</SelectItem>
+                      <SelectItem value="operational">Operacional</SelectItem>
+                      <SelectItem value="maintenance">Manutenção</SelectItem>
+                      <SelectItem value="offline">Avariado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -278,15 +214,15 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
-                  Monitoring & Alerts
+                  Monitoramento e Alertas
                 </CardTitle>
-                <CardDescription>Configure alert settings and monitoring thresholds</CardDescription>
+                <CardDescription>Configurar as configurações de alerta e os limites de monitoramento</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Enable Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Master switch for all alert notifications</p>
+                    <Label>Activar Alertas</Label>
+                    <p className="text-sm text-muted-foreground">Butão principal para todas as notificações</p>
                   </div>
                   <Switch
                     checked={formData.alertsEnabled}
@@ -298,8 +234,8 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Temperature Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Alert when temperature goes out of range</p>
+                    <Label>Alertas de Temperatura</Label>
+                    <p className="text-sm text-muted-foreground">Alertar quando a temperatura estiver abaixo do limite</p>
                   </div>
                   <Switch
                     checked={formData.temperatureAlerts}
@@ -310,8 +246,8 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Maintenance Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Remind when maintenance is due</p>
+                    <Label>Alertas de Manutenção</Label>
+                    <p className="text-sm text-muted-foreground">Lembrar quando houver manutenção pendente</p>
                   </div>
                   <Switch
                     checked={formData.maintenanceAlerts}
@@ -323,7 +259,7 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
                 <Separator />
 
                 <div className="space-y-2">
-                  <Label htmlFor="capacityThreshold">Capacity Alert Threshold (%)</Label>
+                  <Label htmlFor="capacityThreshold">Limite de Alerta de Capacidade (%)</Label>
                   <Input
                     id="capacityThreshold"
                     type="number"
@@ -333,17 +269,17 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
                     min="50"
                     max="100"
                   />
-                  <p className="text-xs text-muted-foreground">Alert when freezer reaches this capacity percentage</p>
+                  <p className="text-xs text-muted-foreground">Alertar quando o congelador atingir este percentual de capacidade</p>
                 </div>
 
                 {utilizationPercentage >= formData.capacityThreshold && (
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      <span className="text-sm font-medium text-yellow-800">Capacity Warning</span>
+                      <span className="text-sm font-medium text-yellow-800">Aviso de Capacidade</span>
                     </div>
                     <p className="text-sm text-yellow-700 mt-1">
-                      Current utilization ({utilizationPercentage}%) exceeds threshold
+                      A utilização atual  ({utilizationPercentage}%) excede o limite estabelecido
                     </p>
                   </div>
                 )}
@@ -355,35 +291,35 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Maintenance & Notes
+                  Manutenção e Notas
                 </CardTitle>
-                <CardDescription>Track maintenance schedule and additional information</CardDescription>
+                <CardDescription>Acompanhar o cronograma de manutenção e informações adicionais</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Last Maintenance</Label>
+                  <Label>Última Manutenção</Label>
                   <div className="p-2 bg-gray-50 rounded-md text-sm">{lastMaintenance}</div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Next Maintenance</Label>
+                  <Label>Próxima Manutenção</Label>
                   <div className="p-2 bg-gray-50 rounded-md text-sm">{nextMaintenance}</div>
                 </div>
 
                 <Button variant="outline" size="sm" className="w-full">
                   <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Maintenance
+                  Agendar Manutenção
                 </Button>
 
                 <Separator />
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">Observações</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => handleInputChange("notes", e.target.value)}
-                    placeholder="Additional notes about this freezer..."
+                    placeholder="Notas adicionais sobre este freezer..."
                     rows={4}
                   />
                 </div>
@@ -391,7 +327,7 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
                 <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
                   <h4 className="font-medium mb-2 flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${getStatusColor(formData.status)}`} />
-                    Current Status
+                    Status Atual
                   </h4>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <p>
@@ -401,10 +337,10 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
                       </Badge>
                     </p>
                     <p>
-                      <span className="font-medium">Utilization:</span> {utilizationPercentage}%
+                      <span className="font-medium">Utilização:</span> {utilizationPercentage}%
                     </p>
                     <p>
-                      <span className="font-medium">Alerts:</span> {formData.alertsEnabled ? "Enabled" : "Disabled"}
+                      <span className="font-medium">Alertas:</span> {formData.alertsEnabled ? "Ativado" : "Desativado"}
                     </p>
                   </div>
                 </div>
@@ -422,12 +358,12 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving...
+                  Salvando...
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Save Settings
+                  Salvar Configurações
                 </>
               )}
             </Button>

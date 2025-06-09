@@ -25,6 +25,19 @@ export default function AddFreezerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const requiredFields = { ...formData }
+  
+    for (const [key, value] of Object.entries(requiredFields)) {
+      if (key === "notes") continue // Skip optional field
+      
+      if (!value) {
+        alert(`Por favor, preencha todos campos obrigatórios`)
+        // alert(`Por favor, preencha o campo obrigatório: ${key}`)
+        return
+      }
+    }
+
     setLoading(true)
 
     try {
@@ -36,6 +49,12 @@ export default function AddFreezerPage() {
         body: JSON.stringify({
           ...formData,
           capacity: Number.parseInt(formData.capacity),
+          alertsEnabled: false,
+          temperatureAlerts: false,
+          maintenanceAlerts: false,
+          capacityThreshold: 90,
+          lastMaintenance: "2025-04-05",
+          nextMaintenance: "2025-07-05",
         }),
       })
 
@@ -92,7 +111,7 @@ export default function AddFreezerPage() {
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     placeholder="Congelador Principal do Laboratório"
-                    required
+                    // required
                   />
                 </div>
 
@@ -103,7 +122,7 @@ export default function AddFreezerPage() {
                     value={formData.location}
                     onChange={(e) => handleInputChange("location", e.target.value)}
                     placeholder="Sala de Laboratório A"
-                    required
+                    // required
                   />
                 </div>
 
@@ -134,7 +153,7 @@ export default function AddFreezerPage() {
                     onChange={(e) => handleInputChange("capacity", e.target.value)}
                     placeholder="500"
                     min="1"
-                    required
+                    // required
                   />
                 </div>
               </CardContent>

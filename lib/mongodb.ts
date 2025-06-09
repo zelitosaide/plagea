@@ -5,7 +5,12 @@ import { MongoClient, type Db } from "mongodb"
 // }
 
 // const uri = process.env.MONGODB_URI
-const uri = "mongodb://admin:Admin1234!1@127.0.0.1:27017/todoapp?authSource=admin"
+const uri = process.env.MONGODB_URI 
+  ? process.env.MONGODB_URI
+  : "mongodb://admin:Admin1234!1@127.0.0.1:27017/todoapp?authSource=admin";
+
+const dbName = process.env.MONGODB_DB ? process.env.MONGODB_DB : "plagea";
+
 const options = {}
 
 let client: MongoClient
@@ -31,7 +36,7 @@ if (process.env.NODE_ENV === "development") {
 
 export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db }> {
   const client = await clientPromise
-  const db = client.db("todoapp")
+  const db = client.db(dbName)
   return { client, db }
 }
 

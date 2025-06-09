@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,52 +9,20 @@ import { Thermometer, MapPin, Package, Settings, ChevronLeft, ChevronRight } fro
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-// Mock freezer data
-const mockFreezers = [
-  {
-    id: "F1",
-    name: "Main Lab Freezer",
-    location: "Lab Room A",
-    temperature: "-80°C",
-    capacity: 500,
-    currentSamples: 387,
-    status: "operational",
-    lastMaintenance: "2024-01-10",
-  },
-  {
-    id: "F2",
-    name: "Backup Freezer",
-    location: "Lab Room B",
-    temperature: "-80°C",
-    capacity: 300,
-    currentSamples: 156,
-    status: "operational",
-    lastMaintenance: "2024-01-08",
-  },
-  {
-    id: "F3",
-    name: "Long-term Storage",
-    location: "Storage Room",
-    temperature: "-150°C",
-    capacity: 1000,
-    currentSamples: 234,
-    status: "operational",
-    lastMaintenance: "2024-01-12",
-  },
-  {
-    id: "F4",
-    name: "Research Freezer",
-    location: "Research Lab",
-    temperature: "-80°C",
-    capacity: 400,
-    currentSamples: 298,
-    status: "maintenance",
-    lastMaintenance: "2024-01-05",
-  },
-]
+type Freezer = {
+  _id: string
+  name: string
+  location: string
+  temperature: string
+  capacity: number
+  currentSamples: number
+  code: string
+  status: "operational" | "maintenance" | "offline"
+  lastMaintenance: string
+}
 
 export default function FreezersPage() {
-  const [freezers] = useState(mockFreezers)
+  const [freezers, setFreezers] = useState<Freezer[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 6
   const router = useRouter()
@@ -95,8 +63,29 @@ export default function FreezersPage() {
 
   const handleViewSamples = (freezer: any) => {
     // Navigate to samples page with freezer filter
-    router.push(`/samples?freezer=${freezer.id}`)
+    // router.push(`/samples?freezer=${freezer.code}`)
+    router.push(`/samples?freezer=${freezer._id}:${freezer.name}`)
   }
+
+  const fetchFreezers = async () => {
+    try {
+      const response = await fetch("/api/freezers")
+      if (response.ok) {
+        const data = await response.json()
+        setFreezers(data)
+        console.log(data);
+      }
+    } catch (error) {
+      alert("Falha ao buscar congeladores")
+      console.log("Error fetching freezers:", error)
+    } finally {
+      // setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchFreezers();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -119,10 +108,10 @@ export default function FreezersPage() {
             const utilizationPercentage = Math.round((freezer.currentSamples / freezer.capacity) * 100)
 
             return (
-              <Card key={freezer.id} className="relative">
+              <Card key={freezer._id} className="relative">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="text-xl flex items-center gap-2">
                       <Thermometer className="h-5 w-5" />
                       {freezer.name}
                     </CardTitle>
@@ -168,7 +157,7 @@ export default function FreezersPage() {
                       <Package className="h-4 w-4 mr-2" />
                       Visualizar Amostras
                     </Button>
-                    <Link href={`/freezers/settings/${freezer.id}`}>
+                    <Link href={`/freezers/settings/${freezer._id}`}>
                       <Button variant="outline" size="sm">
                         <Settings className="h-4 w-4" />
                       </Button>

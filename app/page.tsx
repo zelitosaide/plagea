@@ -11,14 +11,15 @@ import {
 import { Thermometer, Package, AlertTriangle, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
 // Mock data for demonstration
-const mockStats = {
-  totalSamples: 1247,
-  totalFreezers: 8,
-  expiringSoon: 23,
-  availablePositions: 156,
-}
+// const stats = {
+//   totalSamples: 1247,
+//   totalFreezers: 8,
+//   expiringSoon: 23,
+//   availablePositions: 156,
+// }
 
 // const mockRecentSamples = [
 //   {
@@ -42,6 +43,47 @@ const mockStats = {
 // ]
 
 export default function Dashboard() {
+  const [stats, setStats] = useState<{
+    totalSamples: number
+    totalFreezers: number
+    expiringSoon: number
+    availablePositions: number
+  } | null>(null)
+
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/stats")
+        const data = await res.json()
+        setStats(data)
+      } catch (error) {
+        console.error("Failed to fetch stats", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-xl text-gray-700">Carregando...</div>
+      </div>
+    )
+  }
+
+  if (!stats) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-xl text-red-600">Erro ao carregar estatísticas</div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-6">
@@ -80,7 +122,7 @@ export default function Dashboard() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockStats.totalSamples.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{stats.totalSamples.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">Em todos os congeladores</p>
             </CardContent>
           </Card>
@@ -91,7 +133,7 @@ export default function Dashboard() {
               <Thermometer className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockStats.totalFreezers}</div>
+              <div className="text-2xl font-bold">{stats.totalFreezers}</div>
               <p className="text-xs text-muted-foreground">Todos operacionais</p>
             </CardContent>
           </Card>
@@ -102,7 +144,7 @@ export default function Dashboard() {
               <AlertTriangle className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{mockStats.expiringSoon}</div>
+              <div className="text-2xl font-bold text-yellow-600">{stats.expiringSoon}</div>
               <p className="text-xs text-muted-foreground">Dentro de 30 dias</p>
             </CardContent>
           </Card>
@@ -113,7 +155,7 @@ export default function Dashboard() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{mockStats.availablePositions}</div>
+              <div className="text-2xl font-bold text-green-600">{stats.availablePositions}</div>
               <p className="text-xs text-muted-foreground">Pronto para novas amostras</p>
             </CardContent>
           </Card>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,18 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
+type Freezer = {
+  _id: string
+  code: string
+  name: string
+  location: string
+  temperature: string
+  capacity: number
+  currentSamples: number
+  status: "operational" | "maintenance" | "offline"
+  lastMaintenance: string
+}
+
 export default function AddSamplePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -24,7 +36,9 @@ export default function AddSamplePage() {
     sampleType: "",
     project: "",
     freezerId: "",
+    freezerCode: "",
     shelf: "",
+    rightLeft: "",
     box: "",
     position: "",
     notes: "",
@@ -33,12 +47,26 @@ export default function AddSamplePage() {
   const [entryDate, setEntryDate] = useState<Date>(new Date())
   const [expiryDate, setExpiryDate] = useState<Date>()
 
+  const [freezers, setFreezers] = useState<Freezer[]>([])
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!entryDate || !expiryDate) {
-      alert("Please select both entry and expiry dates")
-      return
+    const requiredFields = {
+      ...formData,
+      entryDate,
+      expiryDate,
+    }
+  
+    for (const [key, value] of Object.entries(requiredFields)) {
+      if (key === "notes") continue // Skip optional field
+      
+      if (!value) {
+        alert(`Por favor, preencha todos campos obrigatórios`)
+        // alert(`Por favor, preencha o campo obrigatório: ${key}`)
+        return
+      }
     }
 
     setLoading(true)
@@ -52,28 +80,37 @@ export default function AddSamplePage() {
         body: JSON.stringify({
           ...formData,
           entryDate: entryDate.toISOString().split("T")[0],
-          expiryDate: expiryDate.toISOString().split("T")[0],
+          expiryDate: expiryDate?.toISOString().split("T")[0],
         }),
       })
 
       const result = await response.json()
 
       if (response.ok) {
-        alert("Sample added successfully!")
+        alert("Amostra adicionada com sucesso!")
         router.push("/samples")
       } else {
-        alert(result.error || "Failed to add sample")
+        alert(result.error || "Falha ao adicionar a amostra")
       }
     } catch (error) {
-      console.error("Error adding sample:", error)
-      alert("Failed to add sample")
+      console.error("Erro ao adicionar a amostra:", error)
+      alert("Falha ao adicionar a amostra")
     } finally {
       setLoading(false)
     }
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    if (field === "freezerId") {
+      const [code, id] = value.split(":")
+      setFormData((prev) => ({
+        ...prev,
+        freezerId: id,
+        freezerCode: code,
+      }))
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
   }
 
   const formatDate = (date: Date) => {
@@ -199,6 +236,25 @@ export default function AddSamplePage() {
     )
   }
 
+  const fetchFreezers = async () => {
+    try {
+      const response = await fetch("/api/freezers")
+      if (response.ok) {
+        const data = await response.json()
+        setFreezers(data)
+      }
+    } catch (error) {
+      alert("Falha ao buscar congeladores")
+      console.log("Error fetching freezers:", error)
+    } finally {
+      // setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchFreezers();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
@@ -232,13 +288,13 @@ export default function AddSamplePage() {
                     value={formData.patientCode}
                     onChange={(e) => handleInputChange("patientCode", e.target.value)}
                     placeholder="PT-2024-001"
-                    required
+                    // required
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="sampleType">Tipo de Amostra *</Label>
-                  <Select value={formData.sampleType} onValueChange={(value) => handleInputChange("sampleType", value)}>
+                  <Select required value={formData.sampleType} onValueChange={(value) => handleInputChange("sampleType", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo de amostra" />
                     </SelectTrigger>
@@ -316,75 +372,109 @@ export default function AddSamplePage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="freezerId">ID do Congelador *</Label>
-                  <Select value={formData.freezerId} onValueChange={(value) => handleInputChange("freezerId", value)}>
+                  <Select value={
+                    formData.freezerId ? `${formData.freezerCode}:${formData.freezerId}` : ""
+                  } onValueChange={(value) => handleInputChange("freezerId", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o congelador" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="F1">F1 - Congelador Principal do Laboratório</SelectItem>
-                      <SelectItem value="F2">F2 - Congelador de Reserva</SelectItem>
-                      <SelectItem value="F3">F3 - Armazenamento de Longo Prazo</SelectItem>
-                      <SelectItem value="F4">F4 - Congelador de Pesquisa</SelectItem>
+                      {freezers.length > 0 ? (
+                        freezers.map((freezer) => (
+                          <SelectItem key={freezer._id} value={`${freezer.code}:${freezer._id}`}>
+                            {freezer.code} - {freezer.name}
+                          </SelectItem>
+                        ))
+                      ): (
+                        <SelectItem value="na" disabled>
+                          Nenhum congelador disponível
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="shelf">Prateleira *</Label>
-                    <Select value={formData.shelf} onValueChange={(value) => handleInputChange("shelf", value)}>
+                    <Input
+                      id="shelf"
+                      type="number"
+                      value={(formData.shelf).toString().replace("S", "")}
+                      onChange={(e) => handleInputChange("shelf", `S${e.target.value}`)}
+                      placeholder="Prateleira"
+                      min="1"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shelf">Direita/Esquerda *</Label>
+                    <Select value={formData.rightLeft} onValueChange={(value) => handleInputChange("rightLeft", value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Prateleira" />
+                        <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="S1">S1</SelectItem>
-                        <SelectItem value="S2">S2</SelectItem>
-                        <SelectItem value="S3">S3</SelectItem>
-                        <SelectItem value="S4">S4</SelectItem>
-                        <SelectItem value="S5">S5</SelectItem>
+                        <SelectItem value="D">D</SelectItem>
+                        <SelectItem value="E">E</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="box">Box *</Label>
-                    <Select value={formData.box} onValueChange={(value) => handleInputChange("box", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Box" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 10 }, (_, i) => (
-                          <SelectItem key={i + 1} value={`B${i + 1}`}>
-                            B{i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="box"
+                      type="number"
+                      value={(formData.box).toString().replace("B", "")}
+                      onChange={(e) => handleInputChange("box", `B${e.target.value}`)}
+                      placeholder="Box"
+                      min="1"
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="position">Posição *</Label>
-                    <Select value={formData.position} onValueChange={(value) => handleInputChange("position", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Posição" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 25 }, (_, i) => (
-                          <SelectItem key={i + 1} value={`P${i + 1}`}>
-                            P{i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="position"
+                      type="number"
+                      value={(formData.position).toString().replace("P", "")}
+                      onChange={(e) => handleInputChange("position", `P${e.target.value}`)}
+                      placeholder="Posição"
+                      min="1"
+                    />
                   </div>
                 </div>
 
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
+                <div
+                  className={`rounded-lg p-4 shadow-sm text-card-foreground ${
+                    formData.freezerId &&
+                    formData.shelf &&
+                    formData.rightLeft &&
+                    formData.box &&
+                    formData.position
+                      ? "border border-green-500/30 bg-green-50"
+                      : "border border-yellow-600/30 bg-yellow-50/25"
+                  }`}
+                >
                   <p className="text-sm">
                     <span className="font-medium">Visualização da Localização:</span>{" "}
-                    <span className="text-muted-foreground">
-                      {formData.freezerId && formData.shelf && formData.box && formData.position
-                        ? `${formData.freezerId}-${formData.shelf}-${formData.box}-${formData.position}`
+                    <span
+                      className={
+                        formData.freezerId &&
+                        formData.shelf &&
+                        formData.rightLeft &&
+                        formData.box &&
+                        formData.position
+                          ? "text-green-600 font-semibold"
+                          : "text-yellow-600 font-medium"
+                      }
+                    >
+                      {formData.freezerId &&
+                      formData.shelf &&
+                      formData.rightLeft &&
+                      formData.box &&
+                      formData.position
+                        ? `${freezers.find((f) => f._id === formData.freezerId)?.code || ""}-${formData.shelf}-${formData.rightLeft}-${formData.box}-${formData.position}`
                         : "Complete all fields to see location"}
                     </span>
                   </p>

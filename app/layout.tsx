@@ -8,9 +8,8 @@ import Navigation from "@/components/navigation"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Plagea - Laboratory Sample Management System",
-  description: "Plagea: Efficient laboratory sample tracking and freezer management",
-    generator: 'v0.dev'
+  title: "Plagea - Plataforma de Gestão de Amostras",
+  description: "Plagea: Plataforma de Gestão de Amostras",
 }
 
 export default function RootLayout({

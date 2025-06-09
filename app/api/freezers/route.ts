@@ -1,73 +1,28 @@
+import { connectToDatabase } from "@/lib/mongodb"
 import { type NextRequest, NextResponse } from "next/server"
 
-// Freezer Management API - Mock Data Implementation
-
-// Mock freezer data
-const mockFreezers = [
-  {
-    id: "1",
-    name: "Main Lab Freezer",
-    location: "Lab Room A",
-    capacity: 500,
-    temperature: "-80°C",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    name: "Backup Freezer",
-    location: "Lab Room B",
-    capacity: 300,
-    temperature: "-80°C",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    name: "Long-term Storage",
-    location: "Storage Room",
-    capacity: 1000,
-    temperature: "-150°C",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "4",
-    name: "Research Freezer",
-    location: "Research Lab",
-    capacity: 400,
-    temperature: "-80°C",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-]
-
-// Mock sample counts per freezer
-const mockSampleCounts = {
-  F1: 387,
-  F2: 156,
-  F3: 234,
-  F4: 298,
-}
 
 export async function GET() {
   try {
-    const freezersWithCounts = mockFreezers.map((freezer, index) => {
-      const freezerId = `F${index + 1}`
-      const currentSamples = mockSampleCounts[freezerId] || 0
+    const { db } = await connectToDatabase()
+    const freezers = await db.collection("freezers").find({}).sort({ createdAt: -1 }).toArray()
+
+    const freezersWithCounts = freezers.map((freezer) => {
+      const code = `F${freezer.code}`
+      const currentSamples = freezer.currentSamples
       const utilizationPercentage = Math.round((currentSamples / freezer.capacity) * 100)
 
       return {
         ...freezer,
-        freezerId,
+        code,
         currentSamples,
         utilizationPercentage,
-        status: index === 3 ? "maintenance" : "operational",
-        lastMaintenance: `2024-01-${10 + index}`,
+        lastMaintenance: `2025-01-${10 + freezer.code}`,
       }
     })
 
     return NextResponse.json(freezersWithCounts)
+    // return NextResponse.json(freezers)
   } catch (error) {
     console.error("Error fetching freezers:", error)
     return NextResponse.json({ error: "Failed to fetch freezers" }, { status: 500 })
@@ -77,15 +32,31 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const { db } = await connectToDatabase()
 
-    const newFreezer = {
-      id: (mockFreezers.length + 1).toString(),
+    // 🟡 Buscar o último freezer criado, ordenado por code desc
+    const lastFreezer = await db
+      .collection("freezers")
+      .find({})
+      .sort({ code: -1 }) // Ordenar do maior para o menor
+      .limit(1)
+      .toArray();
+
+    const newCode = lastFreezer.length > 0 ? lastFreezer[0].code + 1 : 1;
+
+    const result = await db.collection("freezers").insertOne({
       ...body,
+      code: newCode,
+      currentSamples: 0,
+      // "maintenance" | "operational"
+      status: "operational",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }
+    })
 
-    return NextResponse.json(newFreezer)
+    const newFreezer = await db.collection("freezers").findOne({ _id: result.insertedId })
+
+    return NextResponse.json(newFreezer, { status: 201 })
   } catch (error) {
     console.error("Error creating freezer:", error)
     return NextResponse.json({ error: "Failed to create freezer" }, { status: 500 })
