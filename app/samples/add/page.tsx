@@ -88,7 +88,8 @@ export default function AddSamplePage() {
 
       if (response.ok) {
         alert("Amostra adicionada com sucesso!")
-        router.push("/samples")
+        // router.push("/samples")
+        router.push("/")
       } else {
         alert(result.error || "Falha ao adicionar a amostra")
       }
@@ -299,6 +300,7 @@ export default function AddSamplePage() {
                       <SelectValue placeholder="Selecione o tipo de amostra" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Lavado brocoaveolar">Lavado brocoaveolar</SelectItem>
                       <SelectItem value="Blood Serum">Soro Sanguíneo</SelectItem>
                       <SelectItem value="Plasma">Plasma</SelectItem>
                       <SelectItem value="DNA">DNA</SelectItem>
@@ -317,6 +319,7 @@ export default function AddSamplePage() {
                       <SelectValue placeholder="Selecione o projecto" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="PCP-PED">PCP-PED</SelectItem>
                       <SelectItem value="COVID-19 Study">Estudo sobre COVID-19</SelectItem>
                       <SelectItem value="Diabetes Research">Pesquisa sobre Diabetes</SelectItem>
                       <SelectItem value="Genetic Analysis">Análise Genética</SelectItem>
