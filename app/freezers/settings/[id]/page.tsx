@@ -18,7 +18,8 @@ import {
   // Settings, 
   AlertTriangle, 
   Thermometer, 
-  Calendar 
+  Calendar, 
+  Trash2
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -42,6 +43,7 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
 
   const [lastMaintenance, setLastMaintenance] = useState("")
   const [nextMaintenance, setNextMaintenance] = useState("")
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // Load freezer data
   const fetchFreezerById = async () => {
@@ -71,9 +73,17 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
     setLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      alert("Configurações do freezer atualizadas com sucesso!")
+      await fetch(`/api/freezers/${params.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          capacity: Number.parseInt(formData.capacity || "0"),
+        }),
+      })
+      alert("Freezer updated successfully!")
       router.push("/freezers")
     } catch (error) {
       console.error("Falha ao atualizar as configurações do freezer:", error)
@@ -105,6 +115,35 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
       (formData.currentSamples || 0) /
         Number.parseInt(formData.capacity || "1"),
     ) * 100
+
+    const handleDelete = async () => {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${formData.name}"? This action cannot be undone and will permanently remove all associated data.`,
+      )
+  
+      if (!confirmed) return
+  
+      setLoading(true)
+  
+      try {
+        const response = await fetch(`/api/freezers/${params.id}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          alert("Freezer deleted successfully");
+          router.push("/freezers"); // Navigate only after successful deletion
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to delete freezer: ${errorData.error || "Unknown error"}`);
+        }
+      } catch (error) {
+        console.error("Error deleting freezer:", error)
+        alert("Failed to delete freezer")
+      } finally {
+        setLoading(false)
+      }
+    }
 
   return (
     <div className="min-h-screen bg-background">
@@ -348,25 +387,33 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
             </Card>
           </div>
 
-          <div className="mt-6 flex justify-end gap-4">
-            <Link href="/freezers">
-              <Button variant="outline" disabled={loading}>
-                Cancel
-              </Button>
-            </Link>
-            <Button type="submit" className="flex items-center gap-2" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Salvar Configurações
-                </>
-              )}
+          <div className="mt-6 flex justify-between">
+            {/* <Button variant="destructive" onClick={handleDelete} disabled={loading} className="flex items-center gap-2"> */}
+            <Button variant="destructive" onClick={handleDelete} disabled={!isAdmin} className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4" />
+              Apagar Congelador
             </Button>
+
+            <div className="flex gap-4">
+              <Link href="/freezers">
+                <Button variant="outline" disabled={loading}>
+                  Cancelar
+                </Button>
+              </Link>
+              <Button type="submit" className="flex items-center gap-2" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Salvar Configurações
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </form>
       </div>

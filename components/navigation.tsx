@@ -5,13 +5,17 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 // import { Button } from "@/components/ui/button"
 import { 
+  Download,
   Home, 
+  LogOut, 
   TestTube, 
   Thermometer, 
   // BarChart3, 
   // Settings, 
   // Download
 } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
+import { Button } from "./ui/button"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
@@ -23,12 +27,13 @@ const navigation = [
 
 export default function Navigation() {
   const pathname = usePathname()
+  const { isAuthenticated, logout } = useAuth();
 
   // const handleExportData = () => {
   //   alert("Exporting data... This feature will be available soon!")
   // }
 
-  return (
+  return isAuthenticated && (
     <nav className="bg-white border-b border-gray-200">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
@@ -61,8 +66,8 @@ export default function Navigation() {
             </div>
           </div>
 
-          {/* <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={handleExportData} className="flex items-center gap-1">
+          <div className="flex items-center gap-4">
+            {/* <Button variant="outline" size="sm" onClick={() => {}} className="flex items-center gap-1">
               <Download className="h-4 w-4" />
               Export Data
             </Button>
@@ -70,8 +75,12 @@ export default function Navigation() {
               <Button variant="outline" size="sm">
                 Settings
               </Button>
-            </Link>
-          </div> */}
+            </Link> */}
+            <Button variant="outline" onClick={logout} className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
       </div>
     </nav>

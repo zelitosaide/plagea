@@ -314,19 +314,13 @@ export default function AddSamplePage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="project">Projecto *</Label>
-                  <Select value={formData.project} onValueChange={(value) => handleInputChange("project", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o projecto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PCP-PED">PCP-PED</SelectItem>
-                      <SelectItem value="COVID-19 Study">Estudo sobre COVID-19</SelectItem>
-                      <SelectItem value="Diabetes Research">Pesquisa sobre Diabetes</SelectItem>
-                      <SelectItem value="Genetic Analysis">Análise Genética</SelectItem>
-                      <SelectItem value="Cancer Research">Pesquisa sobre Câncer</SelectItem>
-                      <SelectItem value="Cardiovascular Study">Estudo Cardiovascular</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="project"
+                    value={formData.project}
+                    onChange={(e) => handleInputChange("project", e.target.value)}
+                    placeholder="Nome do Projecto"
+                    // required
+                  />
                 </div>
 
                 <div className="relative space-y-2">
