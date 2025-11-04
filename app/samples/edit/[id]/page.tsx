@@ -92,14 +92,27 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
           "Saliva",
         ];
 
-        if (data.sampleType && !predefinedTypes.includes(data.sampleType)) {
-          // It's a custom type
+        // Also check if it's in the loaded custom types
+        const isInCustomTypes = customSampleTypes.includes(data.sampleType);
+        const isInPredefinedTypes = predefinedTypes.includes(data.sampleType);
+
+        if (data.sampleType && !isInPredefinedTypes && !isInCustomTypes) {
+          // It's a custom type that's not in our current custom types list
+          // This can happen if the type was removed from settings but still exists in samples
           setFormData({
             ...data,
             sampleType: "custom",
             customSampleType: data.sampleType,
           });
+        } else if (isInCustomTypes) {
+          // It's a known custom type
+          setFormData({
+            ...data,
+            sampleType: data.sampleType, // Keep it as the custom type value
+            customSampleType: "", // Clear this since it's not "custom" selector
+          });
         } else {
+          // It's a predefined type
           setFormData(data);
         }
 
@@ -112,11 +125,6 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
       // setLoading(false)
     }
   };
-
-  // Load sample data
-  useEffect(() => {
-    fetchSampleById();
-  }, [params.id]);
 
   const fetchFreezers = async () => {
     try {
@@ -139,7 +147,13 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
       const response = await fetch("/api/settings");
       if (response.ok) {
         const data = await response.json();
+        console.log("Loaded custom sample types:", data);
         setCustomSampleTypes(data);
+      } else {
+        console.log(
+          "Failed to load custom sample types, status:",
+          response.status
+        );
       }
     } catch (error) {
       console.log("Error loading custom sample types:", error);
@@ -148,6 +162,7 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
 
   const saveCustomSampleType = async (customType: string) => {
     try {
+      console.log("Saving custom sample type:", customType);
       const response = await fetch("/api/settings", {
         method: "POST",
         headers: {
@@ -158,6 +173,7 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
 
       if (response.ok) {
         const result = await response.json();
+        console.log("Custom sample type saved successfully:", result);
         setCustomSampleTypes(result.customSampleTypes);
         return true;
       } else {
@@ -172,9 +188,14 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
   };
 
   useEffect(() => {
-    fetchFreezers();
-    loadCustomSampleTypes();
-  }, []);
+    const initializeData = async () => {
+      await Promise.all([fetchFreezers(), loadCustomSampleTypes()]);
+      // Load sample data after custom types are loaded
+      await fetchSampleById();
+    };
+
+    initializeData();
+  }, [params.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

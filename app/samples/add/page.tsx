@@ -331,7 +331,13 @@ export default function AddSamplePage() {
       const response = await fetch("/api/settings");
       if (response.ok) {
         const data = await response.json();
+        console.log("Loaded custom sample types:", data);
         setCustomSampleTypes(data);
+      } else {
+        console.log(
+          "Failed to load custom sample types, status:",
+          response.status
+        );
       }
     } catch (error) {
       console.log("Error loading custom sample types:", error);
@@ -340,6 +346,7 @@ export default function AddSamplePage() {
 
   const saveCustomSampleType = async (customType: string) => {
     try {
+      console.log("Saving custom sample type:", customType);
       const response = await fetch("/api/settings", {
         method: "POST",
         headers: {
@@ -350,6 +357,7 @@ export default function AddSamplePage() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log("Custom sample type saved successfully:", result);
         setCustomSampleTypes(result.customSampleTypes);
         return true;
       } else {
