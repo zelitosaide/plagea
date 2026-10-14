@@ -508,7 +508,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
                   <div className="space-y-2">
                     <Label htmlFor="sampleQuantity">
-                      Quantidade da Amostra no Criotubo (mL) *
+                      Quantidade no Criotubo (mL) *
                     </Label>
                     <Input
                       id="sampleQuantity"
@@ -592,7 +592,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="labEntryTime">
-                      Hora de entrada no Laboratório *
+                      Hora de Entrada no Lab *
                     </Label>
                     <Input
                       id="labEntryTime"
@@ -606,7 +606,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
                   <div className="space-y-2">
                     <Label htmlFor="freezerStorageTime">
-                      Hora de armazenamento no congelador *
+                      Hora de Armazenamento *
                     </Label>
                     <Input
                       id="freezerStorageTime"
@@ -664,7 +664,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="shelf">Prateleira *</Label>
                     <Input
@@ -680,15 +680,15 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="shelf">Direita/Esquerda *</Label>
+                    <Label htmlFor="rightLeft">Lado *</Label>
                     <Select
                       value={formData.rightLeft}
                       onValueChange={(value) =>
                         handleInputChange("rightLeft", value)
                       }
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                      <SelectTrigger id="rightLeft">
+                        <SelectValue placeholder="D ou E" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="D">D</SelectItem>
