@@ -52,10 +52,10 @@ export function PositionPicker({
           </span>
         </div>
       </div>
-      <div className="max-h-56 overflow-y-auto">
+      <div className="max-h-[26rem] overflow-y-auto">
         <div
           className="grid gap-1.5"
-          style={{ gridTemplateColumns: `repeat(${columns}, 1.75rem)` }}
+          style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
         >
           {Array.from({ length: maxPosition }, (_, i) => i + 1).map((pos) => {
             const patientCode = occupiedMap.get(pos)
@@ -70,7 +70,7 @@ export function PositionPicker({
                 onClick={() => onSelect(pos)}
                 title={isOccupied ? `Ocupado: ${patientCode}` : `Posição ${pos} livre`}
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border text-[11px] font-semibold transition-colors",
+                  "flex h-9 items-center justify-center rounded-sm border text-[11px] font-semibold transition-colors",
                   isOccupied
                     ? "border-destructive bg-destructive text-destructive-foreground cursor-not-allowed line-through"
                     : isSelected

@@ -809,7 +809,7 @@ export default function AddSamplePage() {
                   </div>
                 </div>
 
-                <div className="min-h-72">
+                <div className="min-h-[28rem]">
                   {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">

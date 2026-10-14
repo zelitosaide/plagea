@@ -872,12 +872,12 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
 
-                <div className="min-h-72">
+                <div className="min-h-[28rem]">
                   {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
                     boxConfigLoading ? (
                       <div className="space-y-2">
                         <Skeleton className="h-4 w-40" />
-                        <Skeleton className="h-56 w-full" />
+                        <Skeleton className="h-[26rem] w-full" />
                       </div>
                     ) : (
                       <div className="space-y-2">
