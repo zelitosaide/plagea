@@ -522,7 +522,7 @@ ${sample.notes || "Nenhuma observação registrada"}`
                           <Button
                             key={page}
                             variant={
-                              currentPage === page ? "default" : "outline-solid"
+                              currentPage === page ? "default" : "outline"
                             }
                             size="sm"
                             onClick={() => changePage(page)}
