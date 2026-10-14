@@ -32,11 +32,28 @@ export function PositionPicker({
   disabled = false,
 }: PositionPickerProps) {
   const occupiedMap = new Map(occupied.map((slot) => [slot.position, slot.patientCode]))
+  const occupiedCount = occupiedMap.size
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium text-foreground">
+          {occupiedCount} de {maxPosition} posições ocupadas
+        </span>
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-xs border border-border bg-card" /> Livre
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-xs bg-destructive" /> Ocupado
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-xs bg-primary" /> Seleccionado
+          </span>
+        </div>
+      </div>
       <div
-        className="grid gap-1"
+        className="grid gap-1.5"
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       >
         {Array.from({ length: maxPosition }, (_, i) => i + 1).map((pos) => {
@@ -52,29 +69,18 @@ export function PositionPicker({
               onClick={() => onSelect(pos)}
               title={isOccupied ? `Ocupado: ${patientCode}` : `Posição ${pos} livre`}
               className={cn(
-                "flex aspect-square items-center justify-center rounded-sm text-[10px] font-medium transition-colors",
+                "flex aspect-square items-center justify-center rounded-sm border text-[11px] font-semibold transition-colors",
                 isOccupied
-                  ? "bg-destructive/15 text-destructive/70 cursor-not-allowed"
+                  ? "border-destructive bg-destructive text-destructive-foreground cursor-not-allowed line-through"
                   : isSelected
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:border-primary hover:bg-accent hover:text-accent-foreground cursor-pointer"
               )}
             >
               {pos}
             </button>
           )
         })}
-      </div>
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-xs bg-muted" /> Livre
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-xs bg-destructive/15" /> Ocupado
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-xs bg-primary" /> Seleccionado
-        </span>
       </div>
     </div>
   )
