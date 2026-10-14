@@ -21,7 +21,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  AlertTriangle,
   CalendarIcon,
+  Clock,
+  Info,
   Save,
   ArrowLeft,
   Loader2,
@@ -43,6 +51,8 @@ type Freezer = {
   currentSamples: number;
   status: "operational" | "maintenance" | "offline";
   lastMaintenance: string;
+  boxRows?: number;
+  boxColumns?: number;
 };
 
 type ExistingSample = {
@@ -242,8 +252,27 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
           .filter((slot) => !Number.isNaN(slot.position))
       : [];
 
+  const selectedFreezer = freezers.find((f) => f._id === formData.freezerId);
+  const boxRows = selectedFreezer?.boxRows || 9;
+  const boxColumns = selectedFreezer?.boxColumns || 9;
+
+  const selectedPositionNumber = formData.position
+    ? Number.parseInt(formData.position.replace("P", ""), 10)
+    : undefined;
+
+  const occupiedSlotMatch = occupiedInCurrentBox.find(
+    (slot) => slot.position === selectedPositionNumber
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (occupiedSlotMatch) {
+      alert(
+        `Esta posição já está ocupada pela amostra do paciente ${occupiedSlotMatch.patientCode}. Escolha outra posição.`
+      );
+      return;
+    }
 
     // Determine the final sample type to use
     const finalSampleType =
@@ -638,28 +667,36 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                     <Label htmlFor="labEntryTime">
                       Hora de Entrada no Lab *
                     </Label>
-                    <Input
-                      id="labEntryTime"
-                      type="time"
-                      value={formData.labEntryTime}
-                      onChange={(e) =>
-                        handleInputChange("labEntryTime", e.target.value)
-                      }
-                    />
+                    <div className="relative">
+                      <Clock className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="labEntryTime"
+                        type="time"
+                        value={formData.labEntryTime}
+                        onChange={(e) =>
+                          handleInputChange("labEntryTime", e.target.value)
+                        }
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="freezerStorageTime">
                       Hora de Armazenamento *
                     </Label>
-                    <Input
-                      id="freezerStorageTime"
-                      type="time"
-                      value={formData.freezerStorageTime}
-                      onChange={(e) =>
-                        handleInputChange("freezerStorageTime", e.target.value)
-                      }
-                    />
+                    <div className="relative">
+                      <Clock className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="freezerStorageTime"
+                        type="time"
+                        value={formData.freezerStorageTime}
+                        onChange={(e) =>
+                          handleInputChange("freezerStorageTime", e.target.value)
+                        }
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -766,21 +803,29 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                       }
                       placeholder="Posição"
                       min="1"
+                      aria-invalid={!!occupiedSlotMatch}
+                      className={occupiedSlotMatch ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
+                    {occupiedSlotMatch && (
+                      <p className="flex items-center gap-1 text-xs text-destructive">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Posição já ocupada por {occupiedSlotMatch.patientCode}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
                   <div className="space-y-2">
-                    <Label>Posições na Caixa</Label>
+                    <Label>
+                      Posições na Caixa ({boxRows}x{boxColumns})
+                    </Label>
                     <PositionPicker
                       occupied={occupiedInCurrentBox}
-                      selected={
-                        formData.position
-                          ? Number.parseInt(formData.position.replace("P", ""), 10)
-                          : undefined
-                      }
+                      selected={selectedPositionNumber}
                       onSelect={(pos) => handleInputChange("position", `P${pos}`)}
+                      maxPosition={boxRows * boxColumns}
+                      columns={boxColumns}
                     />
                   </div>
                 ) : (
@@ -791,43 +836,89 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
                 <div
                   className={`rounded-lg p-4 shadow-xs text-card-foreground ${
-                    formData.freezerId &&
-                    formData.shelf &&
-                    formData.rightLeft &&
-                    formData.box &&
-                    formData.position
-                      ? "border border-primary/30 bg-primary/5"
-                      : "border border-amber-600/30 bg-amber-50/25"
+                    occupiedSlotMatch
+                      ? "border border-destructive/40 bg-destructive/5"
+                      : formData.freezerId &&
+                          formData.shelf &&
+                          formData.rightLeft &&
+                          formData.box &&
+                          formData.position
+                        ? "border border-primary/30 bg-primary/5"
+                        : "border border-amber-600/30 bg-amber-50/25"
                   }`}
                 >
-                  <p className="text-sm">
-                    <span className="font-medium">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium">
                       Visualização da Localização:
-                    </span>{" "}
-                    <span
-                      className={
-                        formData.freezerId &&
+                    </span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                          <span className="sr-only">Legenda dos códigos de localização</span>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 text-sm">
+                        <p className="font-medium mb-2">Legenda dos códigos de localização</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">F5</span>
+                            <span className="text-muted-foreground">Congelador 5</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">S1</span>
+                            <span className="text-muted-foreground">Prateleira 1</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">B1</span>
+                            <span className="text-muted-foreground">Box 1</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">P1</span>
+                            <span className="text-muted-foreground">Posição 1</span>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Exemplo: F5-S1-D-B1-P1 = Congelador 5, Prateleira 1, Direita, Box 1, Posição 1
+                        </p>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <p className="text-sm mt-1">
+                    {occupiedSlotMatch ? (
+                      <span className="text-destructive font-semibold flex items-center gap-1">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Posição ocupada por {occupiedSlotMatch.patientCode}
+                      </span>
+                    ) : (
+                      <span
+                        className={
+                          formData.freezerId &&
+                          formData.shelf &&
+                          formData.rightLeft &&
+                          formData.box &&
+                          formData.position
+                            ? "text-primary font-semibold"
+                            : "text-amber-600 font-medium"
+                        }
+                      >
+                        {formData.freezerId &&
                         formData.shelf &&
                         formData.rightLeft &&
                         formData.box &&
                         formData.position
-                          ? "text-primary font-semibold"
-                          : "text-amber-600 font-medium"
-                      }
-                    >
-                      {formData.freezerId &&
-                      formData.shelf &&
-                      formData.rightLeft &&
-                      formData.box &&
-                      formData.position
-                        ? `${
-                            freezers.find((f) => f._id === formData.freezerId)
-                              ?.code || ""
-                          }-${formData.shelf}-${formData.rightLeft}-${
-                            formData.box
-                          }-${formData.position}`
-                        : "Complete all fields to see location"}
-                    </span>
+                          ? `${
+                              freezers.find((f) => f._id === formData.freezerId)
+                                ?.code || ""
+                            }-${formData.shelf}-${formData.rightLeft}-${
+                              formData.box
+                            }-${formData.position}`
+                          : "Complete all fields to see location"}
+                      </span>
+                    )}
                   </p>
                 </div>
 
@@ -840,44 +931,6 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                     placeholder="Notas adicionais sobre a amostra..."
                     rows={3}
                   />
-                </div>
-
-                {/* Legends Section */}
-                <div className="bg-accent border border-accent rounded-lg p-4">
-                  <h4 className="font-medium text-accent-foreground mb-3">
-                    Legenda dos Códigos de Localização:
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono bg-card px-2 py-1 rounded text-accent-foreground">
-                        F5
-                      </span>
-                      <span className="text-accent-foreground/80">Congelador 5</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono bg-card px-2 py-1 rounded text-accent-foreground">
-                        S1
-                      </span>
-                      <span className="text-accent-foreground/80">Prateleira 1</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono bg-card px-2 py-1 rounded text-accent-foreground">
-                        B1
-                      </span>
-                      <span className="text-accent-foreground/80">Box 1</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono bg-card px-2 py-1 rounded text-accent-foreground">
-                        P1
-                      </span>
-                      <span className="text-accent-foreground/80">Posição 1</span>
-                    </div>
-                  </div>
-                  <div className="mt-3 text-xs text-accent-foreground/80">
-                    <strong>Exemplo de localização completa:</strong>{" "}
-                    F5-S1-D-B1-P1 = Congelador 5, Prateleira 1, Direita, Box 1,
-                    Posição 1
-                  </div>
                 </div>
               </CardContent>
             </Card>

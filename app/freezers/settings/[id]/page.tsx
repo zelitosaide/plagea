@@ -40,7 +40,15 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
     temperatureAlerts: false,
     maintenanceAlerts: false,
     capacityThreshold: 90,
+    boxRows: 9,
+    boxColumns: 9,
   })
+
+  const boxSizePresets = [
+    { label: "9 x 9 (81)", rows: 9, columns: 9 },
+    { label: "10 x 10 (100)", rows: 10, columns: 10 },
+    { label: "8 x 12 (96)", rows: 8, columns: 12 },
+  ]
 
   const [lastMaintenance, setLastMaintenance] = useState("")
   const [nextMaintenance, setNextMaintenance] = useState("")
@@ -52,7 +60,11 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
       const response = await fetch(`/api/freezers/${id}`)
       if (response.ok) {
         const data = await response.json()
-        setFormData(data)
+        setFormData({
+          ...data,
+          boxRows: data.boxRows || 9,
+          boxColumns: data.boxColumns || 9,
+        })
         setLastMaintenance(data.lastMaintenance)
         setNextMaintenance(data.nextMaintenance)
       }
@@ -237,6 +249,59 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                       <SelectItem value="offline">Avariado</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Dimensões da Caixa (Linhas x Colunas)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Usado na grelha de posições ao adicionar amostras neste congelador.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {boxSizePresets.map((preset) => (
+                      <Button
+                        key={preset.label}
+                        type="button"
+                        variant={
+                          formData.boxRows === preset.rows && formData.boxColumns === preset.columns
+                            ? "default"
+                            : "outline"
+                        }
+                        size="sm"
+                        onClick={() => {
+                          handleInputChange("boxRows", preset.rows)
+                          handleInputChange("boxColumns", preset.columns)
+                        }}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-1">
+                    <div className="space-y-1">
+                      <Label htmlFor="boxRows" className="text-xs font-normal text-muted-foreground">
+                        Linhas
+                      </Label>
+                      <Input
+                        id="boxRows"
+                        type="number"
+                        min="1"
+                        value={formData.boxRows}
+                        onChange={(e) => handleInputChange("boxRows", Number.parseInt(e.target.value) || 1)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="boxColumns" className="text-xs font-normal text-muted-foreground">
+                        Colunas
+                      </Label>
+                      <Input
+                        id="boxColumns"
+                        type="number"
+                        min="1"
+                        value={formData.boxColumns}
+                        onChange={(e) => handleInputChange("boxColumns", Number.parseInt(e.target.value) || 1)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

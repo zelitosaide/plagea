@@ -21,7 +21,15 @@ export default function AddFreezerPage() {
     temperature: "",
     capacity: "",
     notes: "",
+    boxRows: "9",
+    boxColumns: "9",
   })
+
+  const boxSizePresets = [
+    { label: "9 x 9 (81)", rows: 9, columns: 9 },
+    { label: "10 x 10 (100)", rows: 10, columns: 10 },
+    { label: "8 x 12 (96)", rows: 8, columns: 12 },
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,6 +57,8 @@ export default function AddFreezerPage() {
         body: JSON.stringify({
           ...formData,
           capacity: Number.parseInt(formData.capacity),
+          boxRows: Number.parseInt(formData.boxRows) || 9,
+          boxColumns: Number.parseInt(formData.boxColumns) || 9,
           alertsEnabled: false,
           temperatureAlerts: false,
           maintenanceAlerts: false,
@@ -150,6 +160,60 @@ export default function AddFreezerPage() {
                     min="1"
                     // required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Dimensões da Caixa (Linhas x Colunas)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Usado na grelha de posições ao adicionar amostras. Por defeito 9x9 (81), mas pode ser ajustado.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {boxSizePresets.map((preset) => (
+                      <Button
+                        key={preset.label}
+                        type="button"
+                        variant={
+                          formData.boxRows === preset.rows.toString() &&
+                          formData.boxColumns === preset.columns.toString()
+                            ? "default"
+                            : "outline"
+                        }
+                        size="sm"
+                        onClick={() => {
+                          handleInputChange("boxRows", preset.rows.toString());
+                          handleInputChange("boxColumns", preset.columns.toString());
+                        }}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-1">
+                    <div className="space-y-1">
+                      <Label htmlFor="boxRows" className="text-xs font-normal text-muted-foreground">
+                        Linhas
+                      </Label>
+                      <Input
+                        id="boxRows"
+                        type="number"
+                        min="1"
+                        value={formData.boxRows}
+                        onChange={(e) => handleInputChange("boxRows", e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="boxColumns" className="text-xs font-normal text-muted-foreground">
+                        Colunas
+                      </Label>
+                      <Input
+                        id="boxColumns"
+                        type="number"
+                        min="1"
+                        value={formData.boxColumns}
+                        onChange={(e) => handleInputChange("boxColumns", e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
