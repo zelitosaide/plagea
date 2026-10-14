@@ -1,18 +1,20 @@
 import { MongoClient, type Db } from "mongodb";
 
-// if (!process.env.MONGODB_URI) {
-//   throw new Error("Please add your MongoDB URI to .env.local");
-// }
+function resolveUri(): string {
+  if (process.env.MONGODB_URI) {
+    return process.env.MONGODB_URI;
+  }
 
-// const uri = process.env.MONGODB_URI
-const uri = process.env.MONGODB_URI
-  ? process.env.MONGODB_URI
-  : "mongodb://admin:Admin1234!1@127.0.0.1:27017/todoapp?authSource=admin";
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Please add your MongoDB URI to the MONGODB_URI environment variable.");
+  }
 
-console.log("====MongoDB URI=====", uri);
+  // Local dev-only fallback, never used in production.
+  return "mongodb://admin:Admin1234!1@127.0.0.1:27017/todoapp?authSource=admin";
+}
 
+const uri = resolveUri();
 const dbName = process.env.MONGODB_DB ? process.env.MONGODB_DB : "plagea";
-console.log("====MongoDB DB NAME=====", process.env.MONGODB_DB);
 
 const options = {};
 
