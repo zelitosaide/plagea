@@ -79,23 +79,18 @@ export default function AddFreezerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-4">
-            <Link href="/freezers">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar para Congeladores
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">Adicionar Novo Congelador</h1>
-            </div>
-          </div>
-        </div>
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex items-center gap-4">
+        <Link href="/freezers">
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar para Congeladores
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Adicionar Novo Congelador</h1>
+      </div>
 
-        <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Freezer Information */}
             <Card>
@@ -219,8 +214,7 @@ export default function AddFreezerPage() {
               )}
             </Button>
           </div>
-        </form>
-      </div>
+      </form>
     </div>
   )
 }

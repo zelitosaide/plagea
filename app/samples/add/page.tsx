@@ -377,23 +377,18 @@ export default function AddSamplePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-4">
-            <Link href="/samples">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar para Amostras
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">Adicionar Nova Amostra</h1>
-            </div>
-          </div>
-        </div>
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex items-center gap-4">
+        <Link href="/samples">
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar para Amostras
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Adicionar Nova Amostra</h1>
+      </div>
 
-        <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sample Information */}
             <Card>
@@ -694,8 +689,8 @@ export default function AddSamplePage() {
                     formData.rightLeft &&
                     formData.box &&
                     formData.position
-                      ? "border border-green-500/30 bg-green-50"
-                      : "border border-yellow-600/30 bg-yellow-50/25"
+                      ? "border border-primary/30 bg-primary/5"
+                      : "border border-amber-600/30 bg-amber-50/25"
                   }`}
                 >
                   <p className="text-sm">
@@ -709,8 +704,8 @@ export default function AddSamplePage() {
                         formData.rightLeft &&
                         formData.box &&
                         formData.position
-                          ? "text-green-600 font-semibold"
-                          : "text-yellow-600 font-medium"
+                          ? "text-primary font-semibold"
+                          : "text-amber-600 font-medium"
                       }
                     >
                       {formData.freezerId &&
@@ -741,37 +736,37 @@ export default function AddSamplePage() {
                 </div>
 
                 {/* Legends Section */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-3">
+                <div className="bg-accent border border-accent rounded-lg p-4">
+                  <h4 className="font-medium text-accent-foreground mb-3">
                     Legenda dos Códigos de Localização:
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono bg-blue-100 px-2 py-1 rounded text-blue-800">
+                      <span className="font-mono bg-card px-2 py-1 rounded text-accent-foreground">
                         F5
                       </span>
-                      <span className="text-blue-700">Congelador 5</span>
+                      <span className="text-accent-foreground/80">Congelador 5</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono bg-blue-100 px-2 py-1 rounded text-blue-800">
+                      <span className="font-mono bg-card px-2 py-1 rounded text-accent-foreground">
                         S1
                       </span>
-                      <span className="text-blue-700">Prateleira 1</span>
+                      <span className="text-accent-foreground/80">Prateleira 1</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono bg-blue-100 px-2 py-1 rounded text-blue-800">
+                      <span className="font-mono bg-card px-2 py-1 rounded text-accent-foreground">
                         B1
                       </span>
-                      <span className="text-blue-700">Box 1</span>
+                      <span className="text-accent-foreground/80">Box 1</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono bg-blue-100 px-2 py-1 rounded text-blue-800">
+                      <span className="font-mono bg-card px-2 py-1 rounded text-accent-foreground">
                         P1
                       </span>
-                      <span className="text-blue-700">Posição 1</span>
+                      <span className="text-accent-foreground/80">Posição 1</span>
                     </div>
                   </div>
-                  <div className="mt-3 text-xs text-blue-600">
+                  <div className="mt-3 text-xs text-accent-foreground/80">
                     <strong>Exemplo de localização completa:</strong>{" "}
                     F5-S1-D-B1-P1 = Congelador 5, Prateleira 1, Direita, Box 1,
                     Posição 1
@@ -805,8 +800,7 @@ export default function AddSamplePage() {
               )}
             </Button>
           </div>
-        </form>
-      </div>
+      </form>
     </div>
   );
 }

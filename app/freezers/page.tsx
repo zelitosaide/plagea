@@ -45,20 +45,31 @@ export default function FreezersPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "operational":
-        return "bg-green-500"
+        return "bg-primary"
       case "maintenance":
-        return "bg-yellow-500"
+        return "bg-amber-500"
       case "offline":
-        return "bg-red-500"
+        return "bg-destructive"
       default:
-        return "bg-gray-500"
+        return "bg-muted-foreground"
+    }
+  }
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case "operational":
+        return "default" as const
+      case "offline":
+        return "destructive" as const
+      default:
+        return "secondary" as const
     }
   }
 
   const getUtilizationColor = (percentage: number) => {
-    if (percentage >= 90) return "text-red-600"
-    if (percentage >= 75) return "text-yellow-600"
-    return "text-green-600"
+    if (percentage >= 90) return "text-destructive"
+    if (percentage >= 75) return "text-amber-600"
+    return "text-primary"
   }
 
   const handleViewSamples = (freezer: any) => {
@@ -88,21 +99,18 @@ export default function FreezersPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gestão de Congeladores</h1>
-              <p className="text-gray-600 mt-2">Monitorar e gerenciar unidades de congeladores de laboratório</p>
-            </div>
-            <Link href="/freezers/add">
-              <Button>Adicionar Novo Congelador</Button>
-            </Link>
-          </div>
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Gestão de Congeladores</h1>
+          <p className="text-sm text-muted-foreground mt-1">Monitorar e gerenciar unidades de congeladores de laboratório</p>
         </div>
+        <Link href="/freezers/add">
+          <Button>Adicionar Novo Congelador</Button>
+        </Link>
+      </div>
 
-        {/* Freezer Grid */}
+      {/* Freezer Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentFreezers.map((freezer) => {
             const utilizationPercentage = Math.round((freezer.currentSamples / freezer.capacity) * 100)
@@ -117,7 +125,7 @@ export default function FreezersPage() {
                     </CardTitle>
                     <div className="flex items-center gap-2">
                       <div className={`w-3 h-3 rounded-full ${getStatusColor(freezer.status)}`} />
-                      <Badge variant={freezer.status === "operational" ? "default" : "secondary"}>
+                      <Badge variant={getStatusBadgeVariant(freezer.status)}>
                         {freezer.status}
                       </Badge>
                     </div>
@@ -131,7 +139,7 @@ export default function FreezersPage() {
                   {/* Temperature */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Temperatura</span>
-                    <span className="text-lg font-bold text-blue-600">{freezer.temperature}</span>
+                    <span className="text-lg font-bold text-primary">{freezer.temperature}</span>
                   </div>
 
                   {/* Capacity */}
@@ -148,7 +156,7 @@ export default function FreezersPage() {
                   {/* Last Maintenance */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Última Manutenção</span>
-                    <span className="text-sm text-gray-600">{freezer.lastMaintenance}</span>
+                    <span className="text-sm text-muted-foreground">{freezer.lastMaintenance}</span>
                   </div>
 
                   {/* Actions */}
@@ -213,10 +221,10 @@ export default function FreezersPage() {
           <Card>
             <CardContent className="p-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-primary">
                   {freezers.filter((f) => f.status === "operational").length}
                 </div>
-                <div className="text-sm text-gray-600">Operacional</div>
+                <div className="text-sm text-muted-foreground">Operacional</div>
               </div>
             </CardContent>
           </Card>
@@ -227,7 +235,7 @@ export default function FreezersPage() {
                 <div className="text-2xl font-bold text-yellow-600">
                   {freezers.filter((f) => f.status === "maintenance").length}
                 </div>
-                <div className="text-sm text-gray-600">Em Manutenção</div>
+                <div className="text-sm text-muted-foreground">Em Manutenção</div>
               </div>
             </CardContent>
           </Card>
@@ -236,7 +244,7 @@ export default function FreezersPage() {
             <CardContent className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold">{freezers.reduce((sum, f) => sum + f.currentSamples, 0)}</div>
-                <div className="text-sm text-gray-600">Total de Amostras</div>
+                <div className="text-sm text-muted-foreground">Total de Amostras</div>
               </div>
             </CardContent>
           </Card>
@@ -245,11 +253,10 @@ export default function FreezersPage() {
             <CardContent className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold">{freezers.reduce((sum, f) => sum + f.capacity, 0)}</div>
-                <div className="text-sm text-gray-600">Capacidade Total</div>
+                <div className="text-sm text-muted-foreground">Capacidade Total</div>
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
     </div>
   )

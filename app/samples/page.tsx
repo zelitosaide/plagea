@@ -242,38 +242,35 @@ export default function SamplesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Gestão de Amostras
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Pesquisar, filtrar e gerenciar amostras de laboratório
-              </p>
-              {freezerFilter && (
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    Filtrado por: {getFreezerName(freezerFilter)}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={clearFreezerFilter}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                </div>
-              )}
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Gestão de Amostras
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Pesquisar, filtrar e gerenciar amostras de laboratório
+          </p>
+          {freezerFilter && (
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="outline" className="flex items-center gap-1">
+                Filtrado por: {getFreezerName(freezerFilter)}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={clearFreezerFilter}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
             </div>
-            <Link href="/samples/add">
-              <Button>Adicionar Nova Amostra</Button>
-            </Link>
-          </div>
+          )}
         </div>
+        <Link href="/samples/add">
+          <Button className="gap-2">Adicionar Nova Amostra</Button>
+        </Link>
+      </div>
 
         {/* Search and Filters */}
         <Card className="mb-6">
@@ -339,7 +336,7 @@ export default function SamplesPage() {
             <CardTitle>
               Resultados da Amostra ({filteredSamples.length})
               {freezerFilter && (
-                <span className="text-sm font-normal text-gray-600 ml-2">
+                <span className="text-sm font-normal text-muted-foreground ml-2">
                   in {getFreezerName(freezerFilter)}
                 </span>
               )}
@@ -363,7 +360,7 @@ export default function SamplesPage() {
               <div className="space-y-4">
                 {currentSamples.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">
+                    <p className="text-muted-foreground">
                       {freezerFilter
                         ? `Nenhuma amostra encontrada em ${getFreezerName(
                             freezerFilter
@@ -375,7 +372,7 @@ export default function SamplesPage() {
                   currentSamples.map((sample) => (
                     <div
                       key={sample._id}
-                      className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                      className="border border-border rounded-lg p-4 hover:bg-muted/40 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -440,7 +437,7 @@ export default function SamplesPage() {
                             </div>
                           </div>
                           {sample.notes && (
-                            <p className="text-sm text-gray-600 mt-2">
+                            <p className="text-sm text-muted-foreground mt-2">
                               <span className="font-medium">Observações:</span>{" "}
                               {sample.notes}
                             </p>
@@ -549,7 +546,6 @@ ${sample.notes || "Nenhuma observação registrada"}`
             )}
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }

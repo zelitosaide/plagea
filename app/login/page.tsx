@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react"
+import { Eye, EyeOff, FlaskConical, Loader2, Lock, Mail } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -44,10 +44,10 @@ export default function LoginPage() {
   // Show loading if checking existing authentication
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-background to-accent/40 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Checking authentication...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Checking authentication...</p>
         </div>
       </div>
     )
@@ -90,19 +90,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-background to-accent/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            {/* <div className="p-2 bg-green-600 rounded-lg">
-              <Thermometer className="h-6 w-6 text-white" />
-            </div> */}
-            <h1 className="text-lg font-bold text-gray-900">PlaGeA - Plataforma de Gestão Amostras</h1>
+          <div className="flex flex-col items-center justify-center gap-3 mb-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <FlaskConical className="h-6 w-6" />
+            </span>
+            <h1 className="text-lg font-bold text-foreground">PlaGeA - Plataforma de Gestão Amostras</h1>
           </div>
-          <p className="text-gray-600">
-            Esta é uma plataforma completa, desenvolvida pela Faculdade de Medicina 
-            da Universidade Eduardo Mondlane (UEM), com o objetivo de facilitar a 
+          <p className="text-muted-foreground">
+            Esta é uma plataforma completa, desenvolvida pela Faculdade de Medicina
+            da Universidade Eduardo Mondlane (UEM), com o objetivo de facilitar a
             gestão de amostras.
           </p>
         </div>
@@ -126,7 +126,7 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <Label htmlFor="email">Endereço de E-mail</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -144,7 +144,7 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -158,7 +158,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
                     disabled={loading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -179,7 +179,7 @@ export default function LoginPage() {
                     Lembrar de mim
                   </Label>
                 </div>
-                <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-500 hover:underline">
+                <Link href="/forgot-password" className="text-sm text-primary hover:text-primary/80 hover:underline">
                   Esqueceu sua senha?
                 </Link>
               </div>
@@ -220,11 +220,11 @@ export default function LoginPage() {
               </Link>
             </div> */}
 
-            <div className="mt-6 text-center text-sm text-gray-600">
+            <div className="mt-6 text-center text-sm text-muted-foreground">
               Não tem uma conta?{" "}
               <a 
                 href="mailto:zelitosaide83@gmail.com?subject=PlaGeA%20-%20Account%20Registration%20Request&body=Dear%20Administrator,%0D%0A%0D%0AI%20hope%20this%20email%20finds%20you%20well.%20I%20am%20writing%20to%20request%20access%20to%20the%20Lab%20Freezer%20Manager%20system.%0D%0A%0D%0APlease%20find%20my%20details%20below:%0D%0A%0D%0A%E2%80%A2%20Full%20Name:%20[Please%20enter%20your%20full%20name]%0D%0A%E2%80%A2%20Email%20Address:%20[Please%20enter%20your%20email%20address]%0D%0A%E2%80%A2%20Department/Lab:%20[Please%20enter%20your%20department%20or%20lab%20name]%0D%0A%E2%80%A2%20Position/Role:%20[Please%20enter%20your%20job%20title%20or%20role]%0D%0A%E2%80%A2%20Supervisor/PI:%20[Please%20enter%20your%20supervisor%20or%20principal%20investigator%20name]%0D%0A%E2%80%A2%20Phone%20Number:%20[Please%20enter%20your%20contact%20number]%0D%0A%0D%0AReason%20for%20Access:%0D%0A[Please%20provide%20a%20brief%20description%20of%20why%20you%20need%20access%20to%20the%20freezer%20management%20system,%20including%20which%20freezers%20you%20need%20to%20access%20and%20your%20intended%20use]%0D%0A%0D%0AAccess%20Level%20Requested:%0D%0A%E2%96%A1%20View%20Only%20(read%20freezer%20status%20and%20inventory)%0D%0A%E2%96%A1%20Standard%20User%20(manage%20samples%20and%20view%20reports)%0D%0A%E2%96%A1%20Advanced%20User%20(configure%20settings%20and%20alerts)%0D%0A%E2%96%A1%20Administrator%20(full%20system%20access)%0D%0A%0D%0AI%20understand%20that:%0D%0A%E2%80%A2%20I%20will%20be%20responsible%20for%20maintaining%20the%20confidentiality%20of%20my%20login%20credentials%0D%0A%E2%80%A2%20I%20will%20follow%20all%20laboratory%20protocols%20and%20safety%20procedures%0D%0A%E2%80%A2%20I%20will%20report%20any%20system%20issues%20or%20security%20concerns%20immediately%0D%0A%E2%80%A2%20My%20access%20may%20be%20revoked%20if%20policies%20are%20not%20followed%0D%0A%0D%0APlease%20let%20me%20know%20if%20you%20need%20any%20additional%20information%20or%20documentation%20to%20process%20this%20request.%20I%20am%20available%20for%20any%20required%20training%20sessions.%0D%0A%0D%0AThank%20you%20for%20your%20time%20and%20consideration.%0D%0A%0D%0ABest%20regards,%0D%0A[Your%20Name]%0D%0A[Your%20Signature]"
-                className="text-blue-600 hover:text-blue-500 hover:underline"
+                className="text-primary hover:text-primary/80 hover:underline"
               >
                 Contacte o seu administrador.
               </a>
@@ -233,16 +233,16 @@ export default function LoginPage() {
         </Card>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-xs text-gray-500">
+        <div className="mt-8 text-center text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} PlaGeA - FAMED. Todos os direitos reservados.</p>
           <div className="mt-2 space-x-4">
-            <Link href="/privacy" className="hover:text-gray-700">
+            <Link href="/privacy" className="hover:text-foreground">
               Política de Privacidade
             </Link>
-            <Link href="/terms" className="hover:text-gray-700">
+            <Link href="/terms" className="hover:text-foreground">
               Termos de Uso
             </Link>
-            <Link href="/support" className="hover:text-gray-700">
+            <Link href="/support" className="hover:text-foreground">
               Suporte
             </Link>
           </div>

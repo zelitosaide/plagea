@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Thermometer, HelpCircle, Phone, Mail, Clock, MessageSquare, Book, AlertCircle } from "lucide-react"
+import { ArrowLeft, FlaskConical, HelpCircle, Phone, Mail, Clock, MessageSquare, Book, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -39,7 +39,7 @@ export default function SupportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-linear-to-br from-background to-accent/40">
       <div className="container mx-auto p-6 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
@@ -51,10 +51,10 @@ export default function SupportPage() {
               </Button>
             </Link>
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-green-600 rounded-lg">
-                <Thermometer className="h-6 w-6 text-white" />
+              <div className="p-2 bg-primary rounded-lg">
+                <FlaskConical className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">PlaGeA - Plataforma de Gestão de Amostras</h1>
+              <h1 className="text-2xl font-bold text-foreground">PlaGeA - Plataforma de Gestão de Amostras</h1>
             </div>
           </div>
         </div>
@@ -80,12 +80,12 @@ export default function SupportPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                  <Mail className="h-5 w-5 text-green-600" />
+                <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg">
+                  <Mail className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-medium text-green-900">Email Support</p>
-                    <p className="text-sm text-green-700">support@lab.com</p>
-                    <p className="text-xs text-green-600">Response within 24 hours</p>
+                    <p className="font-medium text-primary">Email Support</p>
+                    <p className="text-sm text-primary/80">support@lab.com</p>
+                    <p className="text-xs text-primary/70">Response within 24 hours</p>
                   </div>
                 </div>
 
@@ -111,7 +111,7 @@ export default function SupportPage() {
               <CardContent className="space-y-3">
                 <div className="space-y-2">
                   <h4 className="font-medium">Common Issues</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul className="text-sm text-muted-foreground space-y-1">
                     <li>• Password reset instructions</li>
                     <li>• Freezer alert troubleshooting</li>
                     <li>• Sample tracking guide</li>
@@ -120,7 +120,7 @@ export default function SupportPage() {
                 </div>
                 <div className="space-y-2">
                   <h4 className="font-medium">Documentation</h4>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul className="text-sm text-muted-foreground space-y-1">
                     <li>• User manual (PDF)</li>
                     <li>• Video tutorials</li>
                     <li>• API documentation</li>
@@ -241,29 +241,29 @@ export default function SupportPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full"></div>
                       <span className="font-medium">Core System</span>
                     </div>
-                    <span className="text-sm text-green-700">Operational</span>
+                    <span className="text-sm text-primary">Operational</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full"></div>
                       <span className="font-medium">Alert System</span>
                     </div>
-                    <span className="text-sm text-green-700">Operational</span>
+                    <span className="text-sm text-primary">Operational</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full"></div>
                       <span className="font-medium">Data Backup</span>
                     </div>
-                    <span className="text-sm text-green-700">Operational</span>
+                    <span className="text-sm text-primary">Operational</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-4">Last updated: December 22, 2024 at 3:45 PM EST</p>
+                <p className="text-xs text-muted-foreground mt-4">Last updated: December 22, 2024 at 3:45 PM EST</p>
               </CardContent>
             </Card>
           </div>

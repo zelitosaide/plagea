@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Loader2, Mail, Thermometer, CheckCircle } from "lucide-react"
+import { ArrowLeft, FlaskConical, Loader2, Mail, CheckCircle } from "lucide-react"
 import Link from "next/link"
 
 export default function ForgotPasswordPage() {
@@ -47,17 +47,17 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-background to-accent/40 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            {/* <div className="p-2 bg-green-600 rounded-lg">
-              <Thermometer className="h-6 w-6 text-white" />
-            </div> */}
-            <h1 className="text-lg font-bold text-gray-900">PlaGeA - Plataforma de Gestão Amostras</h1>
+          <div className="flex flex-col items-center justify-center gap-3 mb-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <FlaskConical className="h-6 w-6" />
+            </span>
+            <h1 className="text-lg font-bold text-foreground">PlaGeA - Plataforma de Gestão Amostras</h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Redefina a sua palavra-passe para recuperar o acesso.
           </p>
         </div>
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Endereço de e-mail</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
@@ -118,13 +118,13 @@ export default function ForgotPasswordPage() {
               /* Success State */
               <div className="text-center space-y-4">
                 <div className="flex justify-center">
-                  <CheckCircle className="h-16 w-16 text-green-500" />
+                  <CheckCircle className="h-16 w-16 text-primary" />
                 </div>
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>{message}</AlertDescription>
                 </Alert>
-                <div className="text-sm text-gray-600 space-y-2">
+                <div className="text-sm text-muted-foreground space-y-2">
                   <p>Se não encontrar o e-mail na sua caixa de entrada, por favor verifique a pasta de spam.</p>
                   <p>O link de redefinição irá expirar em 24 horas por razões de segurança.</p>
                 </div>
@@ -137,7 +137,7 @@ export default function ForgotPasswordPage() {
             <div className="text-center">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-500 hover:underline"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 hover:underline"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Voltar para o login
@@ -159,16 +159,16 @@ export default function ForgotPasswordPage() {
         </Card>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-xs text-gray-500">
+        <div className="mt-8 text-center text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} PlaGeA - FAMED. Todos os direitos reservados.</p>
           <div className="mt-2 space-x-4">
-            <Link href="/privacy" className="hover:text-gray-700">
+            <Link href="/privacy" className="hover:text-foreground">
               Política de Privacidade
             </Link>
-            <Link href="/terms" className="hover:text-gray-700">
+            <Link href="/terms" className="hover:text-foreground">
               Termos de Uso
             </Link>
-            <Link href="/support" className="hover:text-gray-700">
+            <Link href="/support" className="hover:text-foreground">
               Suporte
             </Link>
           </div>

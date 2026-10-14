@@ -161,21 +161,20 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-6">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <ShieldCheck className="h-7 w-7 text-green-600" />
-              Administração de Utilizadores
-            </h1>
-            <p className="text-gray-600 mt-2">Gerir quem tem acesso ao PlaGeA e com que permissões</p>
-          </div>
-          <Button onClick={openCreateDialog} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Novo utilizador
-          </Button>
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <ShieldCheck className="h-6 w-6 text-primary" />
+            Administração de Utilizadores
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Gerir quem tem acesso ao PlaGeA e com que permissões</p>
         </div>
+        <Button onClick={openCreateDialog} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Novo utilizador
+        </Button>
+      </div>
 
         <Card>
           <CardHeader>
@@ -184,7 +183,7 @@ export default function AdminUsersPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex items-center justify-center py-12 text-gray-500">
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin mr-2" />
                 A carregar...
               </div>
@@ -238,7 +237,6 @@ export default function AdminUsersPage() {
             )}
           </CardContent>
         </Card>
-      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

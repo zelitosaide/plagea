@@ -101,13 +101,13 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "operational":
-        return "bg-green-500"
+        return "bg-primary"
       case "maintenance":
-        return "bg-yellow-500"
+        return "bg-amber-500"
       case "offline":
-        return "bg-red-500"
+        return "bg-destructive"
       default:
-        return "bg-gray-500"
+        return "bg-muted-foreground"
     }
   }
 
@@ -147,28 +147,20 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
     }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-4">
-            <Link href="/freezers">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar para Congeladores
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                {/* <Settings className="h-6 w-6" /> */}
-                {/* Freezer Settings - {id} */}
-                Configurações do Congelador - {formData.name}
-              </h1>
-              {/* <p className="text-gray-600">Configure freezer parameters and monitoring settings</p> */}
-            </div>
-          </div>
-        </div>
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex items-center gap-4">
+        <Link href="/freezers">
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar para Congeladores
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          Configurações do Congelador - {formData.name}
+        </h1>
+      </div>
 
-        <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Basic Information */}
             <Card>
@@ -313,12 +305,12 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                 </div>
 
                 {utilizationPercentage >= formData.capacityThreshold && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      <span className="text-sm font-medium text-yellow-800">Aviso de Capacidade</span>
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <span className="text-sm font-medium text-amber-800">Aviso de Capacidade</span>
                     </div>
-                    <p className="text-sm text-yellow-700 mt-1">
+                    <p className="text-sm text-amber-700 mt-1">
                       A utilização atual  ({utilizationPercentage}%) excede o limite estabelecido
                     </p>
                   </div>
@@ -338,12 +330,12 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Última Manutenção</Label>
-                  <div className="p-2 bg-gray-50 rounded-md text-sm">{lastMaintenance}</div>
+                  <div className="p-2 bg-muted rounded-md text-sm">{lastMaintenance}</div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Próxima Manutenção</Label>
-                  <div className="p-2 bg-gray-50 rounded-md text-sm">{nextMaintenance}</div>
+                  <div className="p-2 bg-muted rounded-md text-sm">{nextMaintenance}</div>
                 </div>
 
                 <Button variant="outline" size="sm" className="w-full">
@@ -372,7 +364,15 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <p>
                       <span className="font-medium">Status:</span>{" "}
-                      <Badge variant={formData.status === "operational" ? "default" : "secondary"}>
+                      <Badge
+                        variant={
+                          formData.status === "operational"
+                            ? "default"
+                            : formData.status === "offline"
+                              ? "destructive"
+                              : "secondary"
+                        }
+                      >
                         {formData.status}
                       </Badge>
                     </p>
@@ -415,9 +415,8 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                 )}
               </Button>
             </div>
-          </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   )
 }

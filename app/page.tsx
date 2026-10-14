@@ -1,199 +1,255 @@
 "use client"
 
-import { 
-  Card, 
-  CardContent, 
-  // CardDescription, 
-  CardHeader, 
-  CardTitle
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card"
-// import { Badge } from "@/components/ui/badge"
-import { Thermometer, Package, AlertTriangle, Calendar } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import {
+  Thermometer,
+  Package,
+  AlertTriangle,
+  Calendar,
+  Plus,
+  Search,
+  ArrowRight,
+  Loader2,
+  TestTube,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { useAuth } from "@/hooks/use-auth"
+import { cn } from "@/lib/utils"
 
-// Mock data for demonstration
-// const stats = {
-//   totalSamples: 1247,
-//   totalFreezers: 8,
-//   expiringSoon: 23,
-//   availablePositions: 156,
-// }
+type Stats = {
+  totalSamples: number
+  totalFreezers: number
+  expiringSoon: number
+  availablePositions: number
+}
 
-// const mockRecentSamples = [
-//   {
-//     id: "1",
-//     patientCode: "PT-2024-001",
-//     sampleType: "Blood Serum",
-//     project: "COVID-19 Study",
-//     location: "F1-S2-B3-P15",
-//     entryDate: "2024-01-15",
-//     expiryDate: "2024-07-15",
-//   },
-//   {
-//     id: "2",
-//     patientCode: "PT-2024-002",
-//     sampleType: "Plasma",
-//     project: "Diabetes Research",
-//     location: "F2-S1-B1-P8",
-//     entryDate: "2024-01-14",
-//     expiryDate: "2024-06-14",
-//   },
-// ]
+type Sample = {
+  _id: string
+  patientCode: string
+  sampleType: string
+  project: string
+  entryDate: string
+  expiryDate: string
+}
+
+const isExpiringSoon = (expiryDate: string) => {
+  const expiry = new Date(expiryDate)
+  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  return expiry <= thirtyDaysFromNow
+}
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<{
-    totalSamples: number
-    totalFreezers: number
-    expiringSoon: number
-    availablePositions: number
-  } | null>(null)
-
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [recentSamples, setRecentSamples] = useState<Sample[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchStats() {
+    async function fetchData() {
       try {
-        const res = await fetch("/api/stats")
-        const data = await res.json()
-        setStats(data)
+        const [statsRes, samplesRes] = await Promise.all([
+          fetch("/api/stats"),
+          fetch("/api/samples"),
+        ])
+        setStats(await statsRes.json())
+
+        const samples: Sample[] = await samplesRes.json()
+        const sorted = [...samples].sort(
+          (a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime()
+        )
+        setRecentSamples(sorted.slice(0, 5))
       } catch (error) {
-        console.error("Failed to fetch stats", error)
+        console.error("Failed to fetch dashboard data", error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchStats()
+    fetchData()
   }, [])
-
-
-  const { logout } = useAuth()
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-xl text-gray-700">Carregando...</div>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   if (!stats) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-xl text-red-600">Erro ao carregar estatísticas</div>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-destructive">Erro ao carregar estatísticas</p>
       </div>
     )
   }
 
+  const statCards = [
+    {
+      label: "Total de Amostras",
+      value: stats.totalSamples.toLocaleString(),
+      helper: "Em todos os congeladores",
+      icon: Package,
+      tone: "primary" as const,
+    },
+    {
+      label: "Total de Congeladores",
+      value: stats.totalFreezers.toLocaleString(),
+      helper: "Todos operacionais",
+      icon: Thermometer,
+      tone: "primary" as const,
+    },
+    {
+      label: "A Expirar em Breve",
+      value: stats.expiringSoon.toLocaleString(),
+      helper: "Dentro de 30 dias",
+      icon: AlertTriangle,
+      tone: "warning" as const,
+    },
+    {
+      label: "Posições Disponíveis",
+      value: stats.availablePositions.toLocaleString(),
+      helper: "Pronto para novas amostras",
+      icon: Calendar,
+      tone: "primary" as const,
+    },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <div><span className="text-green-600 font-black">PlaGeA{" "}-{" "}</span>Plataforma de Gestão de Amostras</div>
-        </div>
+    <div className="p-4 md:p-8 space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Visão geral da gestão de amostras do laboratório
+        </p>
+      </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Link href="/samples/add">
-            {/* "" */}
-            <Button className="w-full h-12">Adicionar Nova Amostra</Button>
-          </Link>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Link href="/samples/add">
+          <Button className="w-full h-11 gap-2">
+            <Plus className="h-4 w-4" />
+            Adicionar Nova Amostra
+          </Button>
+        </Link>
+        <Link href="/samples">
+          <Button variant="outline" className="w-full h-11 gap-2">
+            <Search className="h-4 w-4" />
+            Pesquisar Amostras
+          </Button>
+        </Link>
+        <Link href="/freezers">
+          <Button variant="outline" className="w-full h-11 gap-2">
+            <Thermometer className="h-4 w-4" />
+            Gerir Congeladores
+          </Button>
+        </Link>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat) => {
+          const Icon = stat.icon
+          return (
+            <Card key={stat.label}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p
+                      className={cn(
+                        "text-3xl font-bold mt-1.5",
+                        stat.tone === "warning" ? "text-amber-600" : "text-foreground"
+                      )}
+                    >
+                      {stat.value}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{stat.helper}</p>
+                  </div>
+                  <div
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                      stat.tone === "warning" ? "bg-amber-100 text-amber-600" : "bg-primary/10 text-primary"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Recent Samples */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Amostras Recentes</CardTitle>
+            <CardDescription>As últimas amostras registadas no sistema</CardDescription>
+          </div>
           <Link href="/samples">
-            <Button variant="outline" className="w-full h-12">
-              Pesquisar Amostras
+            <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+              Ver todas
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
-          <Link href="/freezers">
-            <Button variant="outline" className="w-full h-12">
-              Gerenciar Congeladores
-            </Button>
-          </Link>
-          {/* <Link href="/reports">
-            <Button variant="outline" className="w-full h-12">
-              Visualizar Relatórios
-            </Button>
-          </Link> */}
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Amostras</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalSamples.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Em todos os congeladores</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              {/* <CardTitle className="text-sm font-medium">Congeladores Activos</CardTitle> */}
-              <CardTitle className="text-sm font-medium">Total de Congeladores</CardTitle>
-              <Thermometer className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalFreezers}</div>
-              <p className="text-xs text-muted-foreground">Todos operacionais</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">A Expirar em Breve</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.expiringSoon}</div>
-              <p className="text-xs text-muted-foreground">Dentro de 30 dias</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Posições Disponíveis</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.availablePositions}</div>
-              <p className="text-xs text-muted-foreground">Pronto para novas amostras</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Samples */}
-        {/* <Card>
-          <CardHeader>
-            <CardTitle>Recent Samples</CardTitle>
-            <CardDescription>Latest samples added to the system</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockRecentSamples.map((sample) => (
-                <div key={sample.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{sample.patientCode}</span>
+        </CardHeader>
+        <CardContent>
+          {recentSamples.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <TestTube className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Ainda não há amostras registadas</p>
+                <p className="text-sm text-muted-foreground">Comece por adicionar a primeira amostra.</p>
+              </div>
+              <Link href="/samples/add">
+                <Button size="sm" className="mt-1 gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adicionar Amostra
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {recentSamples.map((sample) => (
+                <div key={sample._id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-foreground">{sample.patientCode}</span>
                       <Badge variant="secondary">{sample.sampleType}</Badge>
                     </div>
-                    <p className="text-sm text-gray-600">{sample.project}</p>
-                    <p className="text-sm text-gray-500">Location: {sample.location}</p>
+                    <p className="text-sm text-muted-foreground truncate">{sample.project}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm">Added: {sample.entryDate}</p>
-                    <p className="text-sm text-yellow-600">Expires: {sample.expiryDate}</p>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm text-muted-foreground">
+                      Entrada: {new Date(sample.entryDate).toLocaleDateString("pt-PT")}
+                    </p>
+                    {isExpiringSoon(sample.expiryDate) ? (
+                      <Badge variant="destructive" className="mt-1">
+                        A Expirar em Breve
+                      </Badge>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Expira: {new Date(sample.expiryDate).toLocaleDateString("pt-PT")}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card> */}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
