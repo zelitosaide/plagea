@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Popover,
   PopoverContent,
@@ -72,6 +73,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [sampleLoading, setSampleLoading] = useState(true);
   const [showEntryCalendar, setShowEntryCalendar] = useState(false);
   const [showExpiryCalendar, setShowExpiryCalendar] = useState(false);
   const [formData, setFormData] = useState({
@@ -100,6 +102,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
   const [customSampleTypes, setCustomSampleTypes] = useState<string[]>([]);
   const [freezerSamples, setFreezerSamples] = useState<ExistingSample[]>([]);
   const [boxConfig, setBoxConfig] = useState<BoxConfig | null>(null);
+  const [boxConfigLoading, setBoxConfigLoading] = useState(false);
   const [editingBoxDimensions, setEditingBoxDimensions] = useState(false);
   const [savingBoxDimensions, setSavingBoxDimensions] = useState(false);
 
@@ -224,9 +227,14 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
   useEffect(() => {
     const initializeData = async () => {
-      await Promise.all([fetchFreezers(), loadCustomSampleTypes()]);
-      // Load sample data after custom types are loaded
-      await fetchSampleById();
+      setSampleLoading(true);
+      try {
+        await Promise.all([fetchFreezers(), loadCustomSampleTypes()]);
+        // Load sample data after custom types are loaded
+        await fetchSampleById();
+      } finally {
+        setSampleLoading(false);
+      }
     };
 
     initializeData();
@@ -257,6 +265,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
     if (!formData.freezerId || !formData.shelf || !formData.rightLeft || !formData.box) {
       setBoxConfig(null);
+      setBoxConfigLoading(false);
       return;
     }
 
@@ -267,10 +276,12 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
       box: formData.box,
     });
 
+    setBoxConfigLoading(true);
     fetch(`/api/boxes?${params}`)
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => setBoxConfig(data ? { rows: data.rows, columns: data.columns } : null))
-      .catch(() => setBoxConfig(null));
+      .catch(() => setBoxConfig(null))
+      .finally(() => setBoxConfigLoading(false));
   }, [formData.freezerId, formData.shelf, formData.rightLeft, formData.box]);
 
   const handleSaveBoxDimensions = async (rows: number, columns: number) => {
@@ -568,6 +579,53 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Editar Amostra</h1>
       </div>
 
+      {sampleLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-4 w-56" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[0, 1, 2, 3, 4, 5].map((row) => (
+                <div key={row} className="space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-4 w-56" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                {[0, 1, 2, 3].map((col) => (
+                  <div key={col} className="space-y-2">
+                    <Skeleton className="h-4 w-14" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-40 w-full" />
+              </div>
+              <Skeleton className="h-16 w-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sample Information */}
@@ -861,48 +919,57 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
 
-                {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>
-                        Posições na Caixa ({boxRows}x{boxColumns})
-                      </Label>
-                      {!editingBoxDimensions && (
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => setEditingBoxDimensions(true)}
-                        >
-                          {boxConfig ? "Alterar dimensões" : "Definir dimensões"}
-                        </Button>
-                      )}
-                    </div>
-
-                    {editingBoxDimensions ? (
-                      <BoxDimensionsEditor
-                        initialRows={boxRows}
-                        initialColumns={boxColumns}
-                        onSave={handleSaveBoxDimensions}
-                        onCancel={() => setEditingBoxDimensions(false)}
-                        saving={savingBoxDimensions}
-                      />
+                <div className="min-h-20">
+                  {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
+                    boxConfigLoading ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-64 w-full" />
+                      </div>
                     ) : (
-                      <PositionPicker
-                        occupied={occupiedInCurrentBox}
-                        selected={selectedPositionNumber}
-                        onSelect={(pos) => handleInputChange("position", `P${pos}`)}
-                        maxPosition={boxRows * boxColumns}
-                        columns={boxColumns}
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
-                  </p>
-                )}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>
+                            Posições na Caixa ({boxRows}x{boxColumns})
+                          </Label>
+                          {!editingBoxDimensions && (
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-xs"
+                              onClick={() => setEditingBoxDimensions(true)}
+                            >
+                              {boxConfig ? "Alterar dimensões" : "Definir dimensões"}
+                            </Button>
+                          )}
+                        </div>
+
+                        {editingBoxDimensions ? (
+                          <BoxDimensionsEditor
+                            initialRows={boxRows}
+                            initialColumns={boxColumns}
+                            onSave={handleSaveBoxDimensions}
+                            onCancel={() => setEditingBoxDimensions(false)}
+                            saving={savingBoxDimensions}
+                          />
+                        ) : (
+                          <PositionPicker
+                            occupied={occupiedInCurrentBox}
+                            selected={selectedPositionNumber}
+                            onSelect={(pos) => handleInputChange("position", `P${pos}`)}
+                            maxPosition={boxRows * boxColumns}
+                            columns={boxColumns}
+                          />
+                        )}
+                      </div>
+                    )
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
+                    </p>
+                  )}
+                </div>
 
                 <div
                   className={`rounded-lg p-4 shadow-xs text-card-foreground ${
@@ -1031,6 +1098,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
             </Button>
           </div>
       </form>
+      )}
     </div>
   );
 }
