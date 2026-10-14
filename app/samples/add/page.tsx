@@ -29,7 +29,6 @@ import {
 import {
   AlertTriangle,
   CalendarIcon,
-  Clock,
   Info,
   Save,
   ArrowLeft,
@@ -41,6 +40,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PositionPicker } from "@/components/position-picker";
+import { TimePicker } from "@/components/time-picker";
 import { BoxDimensionsEditor } from "@/components/box-dimensions-editor";
 
 type Freezer = {
@@ -678,39 +678,19 @@ export default function AddSamplePage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="labEntryTime">
-                      Hora de Entrada no Lab *
-                    </Label>
-                    <div className="relative">
-                      <Clock className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="labEntryTime"
-                        type="time"
-                        value={formData.labEntryTime}
-                        onChange={(e) =>
-                          handleInputChange("labEntryTime", e.target.value)
-                        }
-                        className="pl-10"
-                      />
-                    </div>
+                    <Label>Hora de Entrada no Lab *</Label>
+                    <TimePicker
+                      value={formData.labEntryTime}
+                      onChange={(value) => handleInputChange("labEntryTime", value)}
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="freezerStorageTime">
-                      Hora de Armazenamento *
-                    </Label>
-                    <div className="relative">
-                      <Clock className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="freezerStorageTime"
-                        type="time"
-                        value={formData.freezerStorageTime}
-                        onChange={(e) =>
-                          handleInputChange("freezerStorageTime", e.target.value)
-                        }
-                        className="pl-10"
-                      />
-                    </div>
+                    <Label>Hora de Armazenamento *</Label>
+                    <TimePicker
+                      value={formData.freezerStorageTime}
+                      onChange={(value) => handleInputChange("freezerStorageTime", value)}
+                    />
                   </div>
                 </div>
               </CardContent>
