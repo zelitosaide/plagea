@@ -364,7 +364,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                   />
                 </div>
 
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
+                <div className="rounded-lg border bg-card text-card-foreground shadow-xs p-4">
                   <h4 className="font-medium mb-2 flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${getStatusColor(formData.status)}`} />
                     Status Atual

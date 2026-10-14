@@ -51,9 +51,9 @@ export default function Navigation() {
                   <Link key={item.name} href={item.href}>
                     <div
                       className={cn(
-                        "inline-flex items-center justify-center whitespace-nowrap rounded-s-sm text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 gap-2 cursor-pointer",
+                        "inline-flex items-center justify-center whitespace-nowrap rounded-s-sm text-sm font-medium ring-offset-background transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 gap-2 cursor-pointer",
                         isActive
-                          ? "bg-green-600 text-white hover:bg-green-500/100"
+                          ? "bg-green-600 text-white hover:bg-green-500"
                           : "hover:bg-accent hover:text-accent-foreground",
                       )}
                     >

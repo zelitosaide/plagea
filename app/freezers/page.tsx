@@ -186,7 +186,7 @@ export default function FreezersPage() {
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <Button
                   key={page}
-                  variant={currentPage === page ? "default" : "outline"}
+                  variant={currentPage === page ? "default" : "outline-solid"}
                   size="sm"
                   onClick={() => changePage(page)}
                   className="w-8 h-8 p-0"

@@ -732,7 +732,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div
-                  className={`rounded-lg p-4 shadow-sm text-card-foreground ${
+                  className={`rounded-lg p-4 shadow-xs text-card-foreground ${
                     formData.freezerId &&
                     formData.shelf &&
                     formData.rightLeft &&

@@ -177,7 +177,7 @@ export default function AddFreezerPage() {
                   />
                 </div>
 
-                <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
+                <div className="rounded-lg border bg-card text-card-foreground shadow-xs p-4">
                   <h4 className="font-medium mb-2">Visualização do Congelador</h4>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <p>
