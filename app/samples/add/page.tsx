@@ -41,6 +41,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PositionPicker } from "@/components/position-picker";
+import { BoxDimensionsEditor } from "@/components/box-dimensions-editor";
 
 type Freezer = {
   _id: string;
@@ -52,8 +53,11 @@ type Freezer = {
   currentSamples: number;
   status: "operational" | "maintenance" | "offline";
   lastMaintenance: string;
-  boxRows?: number;
-  boxColumns?: number;
+};
+
+type BoxConfig = {
+  rows: number;
+  columns: number;
 };
 
 type ExistingSample = {
@@ -93,6 +97,9 @@ export default function AddSamplePage() {
   const [freezers, setFreezers] = useState<Freezer[]>([]);
   const [customSampleTypes, setCustomSampleTypes] = useState<string[]>([]);
   const [freezerSamples, setFreezerSamples] = useState<ExistingSample[]>([]);
+  const [boxConfig, setBoxConfig] = useState<BoxConfig | null>(null);
+  const [editingBoxDimensions, setEditingBoxDimensions] = useState(false);
+  const [savingBoxDimensions, setSavingBoxDimensions] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -419,6 +426,60 @@ export default function AddSamplePage() {
       .catch(() => setFreezerSamples([]));
   }, [formData.freezerId]);
 
+  // Carrega as dimensões guardadas para esta caixa específica
+  // (freezerId+shelf+rightLeft+box). Cada caixa é independente: uma
+  // caixa de 9x9 e outra de 10x10 no mesmo congelador são normais.
+  useEffect(() => {
+    setEditingBoxDimensions(false);
+
+    if (!formData.freezerId || !formData.shelf || !formData.rightLeft || !formData.box) {
+      setBoxConfig(null);
+      return;
+    }
+
+    const params = new URLSearchParams({
+      freezerId: formData.freezerId,
+      shelf: formData.shelf,
+      rightLeft: formData.rightLeft,
+      box: formData.box,
+    });
+
+    fetch(`/api/boxes?${params}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setBoxConfig(data ? { rows: data.rows, columns: data.columns } : null))
+      .catch(() => setBoxConfig(null));
+  }, [formData.freezerId, formData.shelf, formData.rightLeft, formData.box]);
+
+  const handleSaveBoxDimensions = async (rows: number, columns: number) => {
+    setSavingBoxDimensions(true);
+    try {
+      const response = await fetch("/api/boxes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          freezerId: formData.freezerId,
+          shelf: formData.shelf,
+          rightLeft: formData.rightLeft,
+          box: formData.box,
+          rows,
+          columns,
+        }),
+      });
+
+      if (response.ok) {
+        setBoxConfig({ rows, columns });
+        setEditingBoxDimensions(false);
+      } else {
+        alert("Falha ao guardar as dimensões da caixa");
+      }
+    } catch (error) {
+      console.error("Error saving box dimensions:", error);
+      alert("Falha ao guardar as dimensões da caixa");
+    } finally {
+      setSavingBoxDimensions(false);
+    }
+  };
+
   const occupiedInCurrentBox =
     formData.shelf && formData.rightLeft && formData.box
       ? freezerSamples
@@ -435,9 +496,8 @@ export default function AddSamplePage() {
           .filter((slot) => !Number.isNaN(slot.position))
       : [];
 
-  const selectedFreezer = freezers.find((f) => f._id === formData.freezerId);
-  const boxRows = selectedFreezer?.boxRows || 9;
-  const boxColumns = selectedFreezer?.boxColumns || 9;
+  const boxRows = boxConfig?.rows || 9;
+  const boxColumns = boxConfig?.columns || 9;
 
   const selectedPositionNumber = formData.position
     ? Number.parseInt(formData.position.replace("P", ""), 10)
@@ -771,16 +831,46 @@ export default function AddSamplePage() {
 
                 {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
                   <div className="space-y-2">
-                    <Label>
-                      Posições na Caixa ({boxRows}x{boxColumns})
-                    </Label>
-                    <PositionPicker
-                      occupied={occupiedInCurrentBox}
-                      selected={selectedPositionNumber}
-                      onSelect={(pos) => handleInputChange("position", `P${pos}`)}
-                      maxPosition={boxRows * boxColumns}
-                      columns={boxColumns}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label>
+                        Posições na Caixa ({boxRows}x{boxColumns})
+                      </Label>
+                      {!editingBoxDimensions && (
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setEditingBoxDimensions(true)}
+                        >
+                          {boxConfig ? "Alterar dimensões" : "Definir dimensões"}
+                        </Button>
+                      )}
+                    </div>
+
+                    {!boxConfig && !editingBoxDimensions && (
+                      <p className="text-xs text-amber-600">
+                        Esta caixa ainda não tem dimensões guardadas — a usar 9x9 por defeito.
+                      </p>
+                    )}
+
+                    {editingBoxDimensions ? (
+                      <BoxDimensionsEditor
+                        initialRows={boxRows}
+                        initialColumns={boxColumns}
+                        onSave={handleSaveBoxDimensions}
+                        onCancel={() => setEditingBoxDimensions(false)}
+                        saving={savingBoxDimensions}
+                      />
+                    ) : (
+                      <PositionPicker
+                        occupied={occupiedInCurrentBox}
+                        selected={selectedPositionNumber}
+                        onSelect={(pos) => handleInputChange("position", `P${pos}`)}
+                        maxPosition={boxRows * boxColumns}
+                        columns={boxColumns}
+                      />
+                    )}
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground">
