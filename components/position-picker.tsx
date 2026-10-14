@@ -52,35 +52,37 @@ export function PositionPicker({
           </span>
         </div>
       </div>
-      <div
-        className="grid gap-1.5"
-        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-      >
-        {Array.from({ length: maxPosition }, (_, i) => i + 1).map((pos) => {
-          const patientCode = occupiedMap.get(pos)
-          const isOccupied = !!patientCode
-          const isSelected = selected === pos
+      <div className="max-h-56 overflow-y-auto">
+        <div
+          className="grid gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${columns}, 1.75rem)` }}
+        >
+          {Array.from({ length: maxPosition }, (_, i) => i + 1).map((pos) => {
+            const patientCode = occupiedMap.get(pos)
+            const isOccupied = !!patientCode
+            const isSelected = selected === pos
 
-          return (
-            <button
-              key={pos}
-              type="button"
-              disabled={disabled || isOccupied}
-              onClick={() => onSelect(pos)}
-              title={isOccupied ? `Ocupado: ${patientCode}` : `Posição ${pos} livre`}
-              className={cn(
-                "flex aspect-square items-center justify-center rounded-sm border text-[11px] font-semibold transition-colors",
-                isOccupied
-                  ? "border-destructive bg-destructive text-destructive-foreground cursor-not-allowed line-through"
-                  : isSelected
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-card text-muted-foreground hover:border-primary hover:bg-accent hover:text-accent-foreground cursor-pointer"
-              )}
-            >
-              {pos}
-            </button>
-          )
-        })}
+            return (
+              <button
+                key={pos}
+                type="button"
+                disabled={disabled || isOccupied}
+                onClick={() => onSelect(pos)}
+                title={isOccupied ? `Ocupado: ${patientCode}` : `Posição ${pos} livre`}
+                className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border text-[11px] font-semibold transition-colors",
+                  isOccupied
+                    ? "border-destructive bg-destructive text-destructive-foreground cursor-not-allowed line-through"
+                    : isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:border-primary hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                )}
+              >
+                {pos}
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

@@ -809,48 +809,50 @@ export default function AddSamplePage() {
                   </div>
                 </div>
 
-                {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>
-                        Posições na Caixa ({boxRows}x{boxColumns})
-                      </Label>
-                      {!editingBoxDimensions && (
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => setEditingBoxDimensions(true)}
-                        >
-                          {boxConfig ? "Alterar dimensões" : "Definir dimensões"}
-                        </Button>
+                <div className="min-h-72">
+                  {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>
+                          Posições na Caixa ({boxRows}x{boxColumns})
+                        </Label>
+                        {!editingBoxDimensions && (
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 text-xs"
+                            onClick={() => setEditingBoxDimensions(true)}
+                          >
+                            {boxConfig ? "Alterar dimensões" : "Definir dimensões"}
+                          </Button>
+                        )}
+                      </div>
+
+                      {editingBoxDimensions ? (
+                        <BoxDimensionsEditor
+                          initialRows={boxRows}
+                          initialColumns={boxColumns}
+                          onSave={handleSaveBoxDimensions}
+                          onCancel={() => setEditingBoxDimensions(false)}
+                          saving={savingBoxDimensions}
+                        />
+                      ) : (
+                        <PositionPicker
+                          occupied={occupiedInCurrentBox}
+                          selected={selectedPositionNumber}
+                          onSelect={(pos) => handleInputChange("position", `P${pos}`)}
+                          maxPosition={boxRows * boxColumns}
+                          columns={boxColumns}
+                        />
                       )}
                     </div>
-
-                    {editingBoxDimensions ? (
-                      <BoxDimensionsEditor
-                        initialRows={boxRows}
-                        initialColumns={boxColumns}
-                        onSave={handleSaveBoxDimensions}
-                        onCancel={() => setEditingBoxDimensions(false)}
-                        saving={savingBoxDimensions}
-                      />
-                    ) : (
-                      <PositionPicker
-                        occupied={occupiedInCurrentBox}
-                        selected={selectedPositionNumber}
-                        onSelect={(pos) => handleInputChange("position", `P${pos}`)}
-                        maxPosition={boxRows * boxColumns}
-                        columns={boxColumns}
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
-                  </p>
-                )}
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
+                    </p>
+                  )}
+                </div>
 
                 <div
                   className={`rounded-lg p-4 shadow-xs text-card-foreground ${

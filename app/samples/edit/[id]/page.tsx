@@ -579,53 +579,6 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Editar Amostra</h1>
       </div>
 
-      {sampleLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-44" />
-              <Skeleton className="h-4 w-56" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[0, 1, 2, 3, 4, 5].map((row) => (
-                <div key={row} className="space-y-2">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-44" />
-              <Skeleton className="h-4 w-56" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="grid grid-cols-4 gap-4">
-                {[0, 1, 2, 3].map((col) => (
-                  <div key={col} className="space-y-2">
-                    <Skeleton className="h-4 w-14" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-40 w-full" />
-              </div>
-              <Skeleton className="h-16 w-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
       <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sample Information */}
@@ -919,12 +872,12 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
 
-                <div className="min-h-20">
+                <div className="min-h-72">
                   {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
                     boxConfigLoading ? (
                       <div className="space-y-2">
                         <Skeleton className="h-4 w-40" />
-                        <Skeleton className="h-64 w-full" />
+                        <Skeleton className="h-56 w-full" />
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -1082,7 +1035,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
             <Button
               type="submit"
               className="flex items-center gap-2"
-              disabled={loading}
+              disabled={loading || sampleLoading}
             >
               {loading ? (
                 <>
@@ -1098,7 +1051,6 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
             </Button>
           </div>
       </form>
-      )}
     </div>
   );
 }
