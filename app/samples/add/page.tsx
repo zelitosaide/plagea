@@ -848,12 +848,6 @@ export default function AddSamplePage() {
                       )}
                     </div>
 
-                    {!boxConfig && !editingBoxDimensions && (
-                      <p className="text-xs text-amber-600">
-                        Esta caixa ainda não tem dimensões guardadas — a usar 9x9 por defeito.
-                      </p>
-                    )}
-
                     {editingBoxDimensions ? (
                       <BoxDimensionsEditor
                         initialRows={boxRows}
