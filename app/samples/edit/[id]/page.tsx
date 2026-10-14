@@ -145,6 +145,12 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
           setFormData(data);
         }
 
+        // Sincroniza os objectos Date usados pelo calendário e pela
+        // validação de envio — setFormData só preenche as strings usadas
+        // para mostrar o texto no botão.
+        if (data.entryDate) setEntryDate(new Date(data.entryDate));
+        if (data.expiryDate) setExpiryDate(new Date(data.expiryDate));
+
         console.log(data);
       }
     } catch (error) {
