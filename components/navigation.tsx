@@ -4,14 +4,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 // import { Button } from "@/components/ui/button"
-import { 
+import {
   Download,
-  Home, 
-  LogOut, 
-  TestTube, 
-  Thermometer, 
-  // BarChart3, 
-  // Settings, 
+  Home,
+  LogOut,
+  ShieldCheck,
+  TestTube,
+  Thermometer,
+  // BarChart3,
+  // Settings,
   // Download
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
@@ -27,11 +28,15 @@ const navigation = [
 
 export default function Navigation() {
   const pathname = usePathname()
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   // const handleExportData = () => {
   //   alert("Exporting data... This feature will be available soon!")
   // }
+
+  const items = user?.role === "admin"
+    ? [...navigation, { name: "Administração", href: "/admin/users", icon: ShieldCheck }]
+    : navigation
 
   return isAuthenticated && (
     <nav className="bg-white border-b border-gray-200">
@@ -43,7 +48,7 @@ export default function Navigation() {
             </Link>
 
             <div className="hidden md:flex items-center gap-1">
-              {navigation.map((item) => {
+              {items.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
 

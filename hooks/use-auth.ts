@@ -3,37 +3,67 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
+type AuthUser = {
+  id: string
+  name: string
+  email: string
+  role: "admin" | "user"
+}
+
 export function useAuth() {
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    const checkAuth = () => {
-      const authStatus = localStorage.getItem("isAuthenticated")
-      const isAuth = authStatus === "true"
-
-      setIsAuthenticated(isAuth)
-      setIsLoading(false)
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me")
+        if (response.ok) {
+          setUser(await response.json())
+          setIsAuthenticated(true)
+        } else {
+          setUser(null)
+          setIsAuthenticated(false)
+        }
+      } catch {
+        setUser(null)
+        setIsAuthenticated(false)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     checkAuth()
   }, [])
 
-  const logout = () => {
-    localStorage.removeItem("isAuthenticated")
-    localStorage.removeItem("rememberUser")
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" })
+    setUser(null)
     setIsAuthenticated(false)
     router.push("/login")
   }
 
-  const login = () => {
-    localStorage.setItem("isAuthenticated", "true")
+  const login = async (email: string, password: string) => {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+
+    if (!response.ok) {
+      const { error } = await response.json()
+      throw new Error(error || "Invalid email or password. Please try again.")
+    }
+
+    setUser(await response.json())
     setIsAuthenticated(true)
     router.push("/")
   }
 
   return {
+    user,
     isAuthenticated,
     isLoading,
     logout,

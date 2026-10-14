@@ -29,9 +29,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Check if user is already authenticated
-    const checkExistingAuth = () => {
-      const authStatus = localStorage.getItem("isAuthenticated")
-      if (authStatus === "true") {
+    const checkExistingAuth = async () => {
+      const response = await fetch("/api/auth/me").catch(() => null)
+      if (response?.ok) {
         router.push("/freezers")
       } else {
         setIsCheckingAuth(false)
@@ -65,28 +65,21 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      })
 
-      // List of valid email-password pairs where password === email
-      const validEmails = [
-        "mariliasufiana@gmail.com",
-        "passanduca@gmail.com",
-        "jahityash2002@gmail.com",
-        "zelitosaide83@gmail.com",
-      ];
-
-      if (validEmails.includes(formData.email) && formData.password === formData.email) {
-        // Simulate successful login
-        localStorage.setItem("isAuthenticated", "true");
-
+      if (response.ok) {
         if (formData.rememberMe) {
           localStorage.setItem("rememberUser", formData.email);
         }
 
         router.push("/");
       } else {
-        setError("Invalid email or password. Please try again.");
+        const data = await response.json().catch(() => null)
+        setError(data?.error || "Invalid email or password. Please try again.");
       }
     } catch (error) {
       console.error("Login error:", error)

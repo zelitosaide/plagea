@@ -19,9 +19,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const pathname = usePathname()
 
   useEffect(() => {
-    const checkAuth = () => {
-      const authStatus = localStorage.getItem("isAuthenticated")
-      const isAuth = authStatus === "true"
+    const checkAuth = async () => {
+      let isAuth = false
+      try {
+        const response = await fetch("/api/auth/me")
+        isAuth = response.ok
+      } catch {
+        isAuth = false
+      }
+
       const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
 
       setIsAuthenticated(isAuth)
