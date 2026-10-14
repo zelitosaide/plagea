@@ -31,6 +31,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { PositionPicker } from "@/components/position-picker";
 
 type Freezer = {
   _id: string;
@@ -42,6 +43,15 @@ type Freezer = {
   currentSamples: number;
   status: "operational" | "maintenance" | "offline";
   lastMaintenance: string;
+};
+
+type ExistingSample = {
+  _id: string;
+  patientCode: string;
+  shelf: string;
+  rightLeft: string;
+  box: string;
+  position: string;
 };
 
 export default function EditSamplePage({ params }: { params: Promise<{ id: string }> }) {
@@ -74,6 +84,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
   const [freezers, setFreezers] = useState<Freezer[]>([]);
   const [customSampleTypes, setCustomSampleTypes] = useState<string[]>([]);
+  const [freezerSamples, setFreezerSamples] = useState<ExistingSample[]>([]);
 
   const fetchSampleById = async () => {
     try {
@@ -197,6 +208,39 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
     initializeData();
   }, [id]);
+
+  // Carrega as amostras já guardadas no congelador seleccionado, para
+  // mostrar quais posições estão ocupadas/livres (excluindo esta própria
+  // amostra, que já ocupa uma posição).
+  useEffect(() => {
+    if (!formData.freezerId) {
+      setFreezerSamples([]);
+      return;
+    }
+
+    fetch(`/api/samples?freezerId=${formData.freezerId}`)
+      .then((response) => (response.ok ? response.json() : []))
+      .then((samples: ExistingSample[]) =>
+        setFreezerSamples(samples.filter((sample) => sample._id !== id))
+      )
+      .catch(() => setFreezerSamples([]));
+  }, [formData.freezerId, id]);
+
+  const occupiedInCurrentBox =
+    formData.shelf && formData.rightLeft && formData.box
+      ? freezerSamples
+          .filter(
+            (sample) =>
+              sample.shelf === formData.shelf &&
+              sample.rightLeft === formData.rightLeft &&
+              sample.box === formData.box
+          )
+          .map((sample) => ({
+            position: Number.parseInt(sample.position.replace("P", ""), 10),
+            patientCode: sample.patientCode,
+          }))
+          .filter((slot) => !Number.isNaN(slot.position))
+      : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -725,6 +769,25 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                     />
                   </div>
                 </div>
+
+                {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
+                  <div className="space-y-2">
+                    <Label>Posições na Caixa</Label>
+                    <PositionPicker
+                      occupied={occupiedInCurrentBox}
+                      selected={
+                        formData.position
+                          ? Number.parseInt(formData.position.replace("P", ""), 10)
+                          : undefined
+                      }
+                      onSelect={(pos) => handleInputChange("position", `P${pos}`)}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
+                  </p>
+                )}
 
                 <div
                   className={`rounded-lg p-4 shadow-xs text-card-foreground ${

@@ -32,6 +32,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { PositionPicker } from "@/components/position-picker";
 
 type Freezer = {
   _id: string;
@@ -43,6 +44,15 @@ type Freezer = {
   currentSamples: number;
   status: "operational" | "maintenance" | "offline";
   lastMaintenance: string;
+};
+
+type ExistingSample = {
+  _id: string;
+  patientCode: string;
+  shelf: string;
+  rightLeft: string;
+  box: string;
+  position: string;
 };
 
 export default function AddSamplePage() {
@@ -72,6 +82,7 @@ export default function AddSamplePage() {
 
   const [freezers, setFreezers] = useState<Freezer[]>([]);
   const [customSampleTypes, setCustomSampleTypes] = useState<string[]>([]);
+  const [freezerSamples, setFreezerSamples] = useState<ExistingSample[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -375,6 +386,37 @@ export default function AddSamplePage() {
     fetchFreezers();
     loadCustomSampleTypes();
   }, []);
+
+  // Carrega as amostras já guardadas no congelador seleccionado, para
+  // mostrar quais posições estão ocupadas/livres antes de o utilizador
+  // escolher uma.
+  useEffect(() => {
+    if (!formData.freezerId) {
+      setFreezerSamples([]);
+      return;
+    }
+
+    fetch(`/api/samples?freezerId=${formData.freezerId}`)
+      .then((response) => (response.ok ? response.json() : []))
+      .then(setFreezerSamples)
+      .catch(() => setFreezerSamples([]));
+  }, [formData.freezerId]);
+
+  const occupiedInCurrentBox =
+    formData.shelf && formData.rightLeft && formData.box
+      ? freezerSamples
+          .filter(
+            (sample) =>
+              sample.shelf === formData.shelf &&
+              sample.rightLeft === formData.rightLeft &&
+              sample.box === formData.box
+          )
+          .map((sample) => ({
+            position: Number.parseInt(sample.position.replace("P", ""), 10),
+            patientCode: sample.patientCode,
+          }))
+          .filter((slot) => !Number.isNaN(slot.position))
+      : [];
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -681,6 +723,25 @@ export default function AddSamplePage() {
                     />
                   </div>
                 </div>
+
+                {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
+                  <div className="space-y-2">
+                    <Label>Posições na Caixa</Label>
+                    <PositionPicker
+                      occupied={occupiedInCurrentBox}
+                      selected={
+                        formData.position
+                          ? Number.parseInt(formData.position.replace("P", ""), 10)
+                          : undefined
+                      }
+                      onSelect={(pos) => handleInputChange("position", `P${pos}`)}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
+                  </p>
+                )}
 
                 <div
                   className={`rounded-lg p-4 shadow-xs text-card-foreground ${

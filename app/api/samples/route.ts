@@ -8,8 +8,13 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search")
     const sampleType = searchParams.get("sampleType")
     const project = searchParams.get("project")
+    const freezerId = searchParams.get("freezerId")
 
     const query: any = {}
+
+    if (freezerId) {
+      query.freezerId = freezerId
+    }
 
     // Search term (patientCode, sampleType, project, notes)
     if (search) {
