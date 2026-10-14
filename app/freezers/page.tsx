@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
 import { Thermometer, MapPin, Package, Settings, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -98,6 +99,11 @@ export default function FreezersPage() {
     fetchFreezers();
   }, []);
 
+  const operationalCount = freezers.filter((f) => f.status === "operational").length
+  const maintenanceCount = freezers.filter((f) => f.status === "maintenance").length
+  const totalSamples = freezers.reduce((sum, f) => sum + f.currentSamples, 0)
+  const totalCapacity = freezers.reduce((sum, f) => sum + f.capacity, 0)
+
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex justify-between items-center">
@@ -110,7 +116,40 @@ export default function FreezersPage() {
         </Link>
       </div>
 
+      {/* Overview */}
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-x-8 gap-y-3 p-4">
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+            <span className="text-sm text-muted-foreground">Operacional</span>
+            <span className="text-sm font-semibold text-foreground">{operationalCount}</span>
+          </div>
+          <Separator orientation="vertical" className="h-5 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+            <span className="text-sm text-muted-foreground">Em Manutenção</span>
+            <span className="text-sm font-semibold text-foreground">{maintenanceCount}</span>
+          </div>
+          <Separator orientation="vertical" className="h-5 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Total de Amostras</span>
+            <span className="text-sm font-semibold text-foreground">{totalSamples}</span>
+          </div>
+          <Separator orientation="vertical" className="h-5 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <Thermometer className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Capacidade Total</span>
+            <span className="text-sm font-semibold text-foreground">{totalCapacity}</span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Freezer Grid */}
+      <div>
+        <h2 className="text-sm font-semibold text-foreground mb-3">
+          Congeladores <span className="font-normal text-muted-foreground">({freezers.length})</span>
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentFreezers.map((freezer) => {
             const utilizationPercentage = Math.round((freezer.currentSamples / freezer.capacity) * 100)
@@ -216,47 +255,6 @@ export default function FreezersPage() {
           </div>
         )}
 
-        {/* Summary Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  {freezers.filter((f) => f.status === "operational").length}
-                </div>
-                <div className="text-sm text-muted-foreground">Operacional</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {freezers.filter((f) => f.status === "maintenance").length}
-                </div>
-                <div className="text-sm text-muted-foreground">Em Manutenção</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{freezers.reduce((sum, f) => sum + f.currentSamples, 0)}</div>
-                <div className="text-sm text-muted-foreground">Total de Amostras</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{freezers.reduce((sum, f) => sum + f.capacity, 0)}</div>
-                <div className="text-sm text-muted-foreground">Capacidade Total</div>
-              </div>
-            </CardContent>
-          </Card>
       </div>
     </div>
   )
