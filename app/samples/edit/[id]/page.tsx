@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -44,7 +44,8 @@ type Freezer = {
   lastMaintenance: string;
 };
 
-export default function EditSamplePage({ params }: { params: { id: string } }) {
+export default function EditSamplePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showEntryCalendar, setShowEntryCalendar] = useState(false);
@@ -76,7 +77,7 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
 
   const fetchSampleById = async () => {
     try {
-      const response = await fetch(`/api/samples/${params.id}`);
+      const response = await fetch(`/api/samples/${id}`);
       if (response.ok) {
         const data = await response.json();
 
@@ -195,7 +196,7 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
     };
 
     initializeData();
-  }, [params.id]);
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,7 +232,7 @@ export default function EditSamplePage({ params }: { params: { id: string } }) {
     setLoading(true);
 
     try {
-      await fetch(`/api/samples/${params.id}`, {
+      await fetch(`/api/samples/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

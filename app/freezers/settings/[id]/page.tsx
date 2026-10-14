@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { use, useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,8 @@ import {
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-export default function FreezerSettingsPage({ params }: { params: { id: string } }) {
+export default function FreezerSettingsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -48,7 +49,7 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
   // Load freezer data
   const fetchFreezerById = async () => {
     try {
-      const response = await fetch(`/api/freezers/${params.id}`)
+      const response = await fetch(`/api/freezers/${id}`)
       if (response.ok) {
         const data = await response.json()
         setFormData(data)
@@ -66,14 +67,14 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
   // Load sample data
   useEffect(() => {
     fetchFreezerById();
-  }, [params.id]);
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      await fetch(`/api/freezers/${params.id}`, {
+      await fetch(`/api/freezers/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -126,7 +127,7 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
       setLoading(true)
   
       try {
-        const response = await fetch(`/api/freezers/${params.id}`, {
+        const response = await fetch(`/api/freezers/${id}`, {
           method: "DELETE",
         });
 
@@ -159,7 +160,7 @@ export default function FreezerSettingsPage({ params }: { params: { id: string }
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 {/* <Settings className="h-6 w-6" /> */}
-                {/* Freezer Settings - {params.id} */}
+                {/* Freezer Settings - {id} */}
                 Configurações do Congelador - {formData.name}
               </h1>
               {/* <p className="text-gray-600">Configure freezer parameters and monitoring settings</p> */}
