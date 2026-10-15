@@ -11,14 +11,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Save, 
-  ArrowLeft, 
-  Loader2, 
-  // Settings, 
-  AlertTriangle, 
-  Thermometer, 
-  Calendar, 
+import {
+  Save,
+  ArrowLeft,
+  Loader2,
+  // Settings,
+  AlertTriangle,
+  Thermometer,
+  Archive,
+  Calendar,
   Trash2
 } from "lucide-react"
 import Link from "next/link"
@@ -198,7 +199,11 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Thermometer className="h-5 w-5" />
+                  {typeConfig.hasTemperature ? (
+                    <Thermometer className="h-5 w-5" />
+                  ) : (
+                    <Archive className="h-5 w-5" />
+                  )}
                   Informações Básicas
                 </CardTitle>
                 <CardDescription>Atualizar a identificação e os detalhes de localização do equipamento</CardDescription>

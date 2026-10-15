@@ -4,13 +4,13 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   BarChart3,
+  Boxes,
   Building2,
   FlaskConical,
   Home,
   LogOut,
   ShieldCheck,
   TestTube,
-  Thermometer,
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import {
@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge"
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Amostras", href: "/samples", icon: TestTube },
-  { name: "Equipamentos", href: "/freezers", icon: Thermometer },
+  { name: "Equipamentos", href: "/freezers", icon: Boxes },
   { name: "Relatórios", href: "/reports", icon: BarChart3 },
 ]
 

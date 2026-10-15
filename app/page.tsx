@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
-  Thermometer,
+  Boxes,
   Package,
   AlertTriangle,
   Calendar,
@@ -103,7 +103,7 @@ export default function Dashboard() {
       label: "Total de Equipamentos",
       value: stats.totalEquipment.toLocaleString(),
       helper: "Todos operacionais",
-      icon: Thermometer,
+      icon: Boxes,
       tone: "primary" as const,
     },
     {
@@ -147,7 +147,7 @@ export default function Dashboard() {
         </Link>
         <Link href="/freezers">
           <Button variant="outline" className="w-full h-11 gap-2">
-            <Thermometer className="h-4 w-4" />
+            <Boxes className="h-4 w-4" />
             Gerir Equipamentos
           </Button>
         </Link>
