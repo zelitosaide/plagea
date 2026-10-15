@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { hashPassword, requireAdminSession } from "@/lib/auth";
+import { getDepartmentFilter, hashPassword, requireAdminSession } from "@/lib/auth";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,6 +11,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "ID de utilizador inválido" }, { status: 400 });
   }
 
+  // Um admin de departamento só pode alterar utilizadores do seu próprio
+  // departamento — 404 (não 403) para não revelar que o utilizador existe
+  // noutro departamento.
+  const targetUser = await auth.db
+    .collection("users")
+    .findOne({ _id: new ObjectId(id), ...getDepartmentFilter(auth.session) });
+
+  if (!targetUser) {
+    return NextResponse.json({ error: "Utilizador não encontrado" }, { status: 404 });
+  }
+
+  const isSuperAdmin = auth.session.role === "superadmin";
+
   try {
     const body = await request.json();
     const update: Record<string, unknown> = { updatedAt: new Date().toISOString() };
@@ -19,11 +32,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       update.name = body.name.trim();
     }
 
-    if (body.role === "admin" || body.role === "user") {
-      if (body.role !== "admin" && id === auth.session.sub) {
+    const allowedRoles = isSuperAdmin ? ["superadmin", "admin", "user"] : ["admin", "user"];
+    if (allowedRoles.includes(body.role)) {
+      if (body.role !== "admin" && body.role !== "superadmin" && id === auth.session.sub) {
         return NextResponse.json({ error: "Não pode remover o seu próprio papel de administrador" }, { status: 400 });
       }
       update.role = body.role;
+      if (body.role === "superadmin") {
+        update.departmentId = null;
+      }
+    }
+
+    if (isSuperAdmin && typeof body.departmentId === "string" && update.role !== "superadmin") {
+      update.departmentId = body.departmentId;
     }
 
     if (typeof body.isActive === "boolean") {
@@ -37,11 +58,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       update.passwordHash = await hashPassword(body.password);
     }
 
-    const result = await auth.db.collection("users").updateOne({ _id: new ObjectId(id) }, { $set: update });
-
-    if (result.matchedCount === 0) {
-      return NextResponse.json({ error: "Utilizador não encontrado" }, { status: 404 });
-    }
+    await auth.db.collection("users").updateOne({ _id: new ObjectId(id) }, { $set: update });
 
     const updatedUser = await auth.db
       .collection("users")
@@ -68,7 +85,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
 
   try {
-    const result = await auth.db.collection("users").deleteOne({ _id: new ObjectId(id) });
+    const result = await auth.db
+      .collection("users")
+      .deleteOne({ _id: new ObjectId(id), ...getDepartmentFilter(auth.session) });
 
     if (result.deletedCount === 0) {
       return NextResponse.json({ error: "Utilizador não encontrado" }, { status: 404 });

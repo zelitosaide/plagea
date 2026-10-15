@@ -5,13 +5,15 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 
-export type UserRole = "admin" | "user";
+export type UserRole = "superadmin" | "admin" | "user";
 
 export type SessionPayload = {
   sub: string;
   email: string;
   name: string;
   role: UserRole;
+  // null só para superadmin, que não pertence a nenhum departamento específico.
+  departmentId: string | null;
 };
 
 export const SESSION_COOKIE_NAME = "plagea_session";
@@ -52,16 +54,31 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, resolveSecret());
-    const { sub, email, name, role } = payload as Record<string, unknown>;
+    const { sub, email, name, role, departmentId } = payload as Record<string, unknown>;
 
-    if (typeof sub !== "string" || typeof email !== "string" || typeof name !== "string" || (role !== "admin" && role !== "user")) {
+    if (
+      typeof sub !== "string" ||
+      typeof email !== "string" ||
+      typeof name !== "string" ||
+      (role !== "superadmin" && role !== "admin" && role !== "user") ||
+      (departmentId !== null && typeof departmentId !== "string")
+    ) {
       return null;
     }
 
-    return { sub, email, name, role };
+    return { sub, email, name, role, departmentId };
   } catch {
     return null;
   }
+}
+
+/**
+ * Filtro de departamento a aplicar em qualquer consulta de dados
+ * (equipamento, amostras, utilizadores): superadmin não tem restrição,
+ * todos os outros só veem o seu próprio departamento.
+ */
+export function getDepartmentFilter(session: SessionPayload): Record<string, unknown> {
+  return session.role === "superadmin" ? {} : { departmentId: session.departmentId };
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -81,8 +98,9 @@ type AdminSessionFailure = { ok: false; response: NextResponse };
 
 /**
  * Re-checks role/isActive against the database, since the Proxy only checked
- * the JWT claim. Used by the admin user-management routes, which are
- * sensitive enough to warrant the extra lookup.
+ * the JWT claim. Usado pelas rotas de administração do departamento
+ * (utilizadores, equipamento) — aceita "admin" (do próprio departamento)
+ * e "superadmin".
  */
 export async function requireAdminSession(request: NextRequest): Promise<AdminSessionSuccess | AdminSessionFailure> {
   const token = getSessionTokenFromRequest(request);
@@ -95,7 +113,30 @@ export async function requireAdminSession(request: NextRequest): Promise<AdminSe
   const { db } = await connectToDatabase();
   const user = await db.collection("users").findOne({ _id: new ObjectId(session.sub) });
 
-  if (!user || !user.isActive || user.role !== "admin") {
+  if (!user || !user.isActive || (user.role !== "admin" && user.role !== "superadmin")) {
+    return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+
+  return { ok: true, db, session };
+}
+
+/**
+ * Como requireAdminSession, mas só aceita "superadmin" — usado pelas
+ * rotas que atravessam departamentos (gestão de departamentos, atribuir
+ * utilizadores a departamentos diferentes).
+ */
+export async function requireSuperAdminSession(request: NextRequest): Promise<AdminSessionSuccess | AdminSessionFailure> {
+  const token = getSessionTokenFromRequest(request);
+  const session = token ? await verifySessionToken(token) : null;
+
+  if (!session) {
+    return { ok: false, response: NextResponse.json({ error: "Not authenticated" }, { status: 401 }) };
+  }
+
+  const { db } = await connectToDatabase();
+  const user = await db.collection("users").findOne({ _id: new ObjectId(session.sub) });
+
+  if (!user || !user.isActive || user.role !== "superadmin") {
     return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 

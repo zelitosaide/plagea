@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       name: user.name,
       role: user.role,
+      departmentId: user.departmentId ?? null,
     });
 
     const response = NextResponse.json({
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
       name: user.name,
       email: user.email,
       role: user.role,
+      departmentId: user.departmentId ?? null,
     });
     response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions());
     return response;

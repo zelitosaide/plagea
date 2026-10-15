@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  Building2,
   FlaskConical,
   Home,
   LogOut,
@@ -34,9 +35,13 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
 
-  const items = user?.role === "admin"
-    ? [...navigation, { name: "Administração", href: "/admin/users", icon: ShieldCheck }]
-    : navigation
+  const items = [...navigation]
+  if (user?.role === "admin" || user?.role === "superadmin") {
+    items.push({ name: "Administração", href: "/admin/users", icon: ShieldCheck })
+  }
+  if (user?.role === "superadmin") {
+    items.push({ name: "Departamentos", href: "/admin/departments", icon: Building2 })
+  }
 
   return (
     <Sidebar>
@@ -85,9 +90,9 @@ export function AppSidebar() {
               <p className="truncate text-sm font-medium text-sidebar-foreground">{user.name}</p>
               <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             </div>
-            {user.role === "admin" && (
+            {(user.role === "admin" || user.role === "superadmin") && (
               <Badge variant="secondary" className="shrink-0 text-[10px]">
-                Admin
+                {user.role === "superadmin" ? "Superadmin" : "Admin"}
               </Badge>
             )}
           </div>

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed:users": "node scripts/seed-users.mjs"
+    "seed:users": "node scripts/seed-users.mjs",
+    "migrate:departments": "node scripts/migrate-departments.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

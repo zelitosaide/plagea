@@ -18,8 +18,21 @@ export async function proxy(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-    if (pathname.startsWith("/api/admin/") && session.role !== "admin") {
+    if (pathname.startsWith("/api/departments") && session.role !== "superadmin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (pathname.startsWith("/api/admin/") && session.role !== "admin" && session.role !== "superadmin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/admin/departments")) {
+    if (!session) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    if (session.role !== "superadmin") {
+      return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
   }
@@ -28,7 +41,7 @@ export async function proxy(request: NextRequest) {
     if (!session) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    if (session.role !== "admin") {
+    if (session.role !== "admin" && session.role !== "superadmin") {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }

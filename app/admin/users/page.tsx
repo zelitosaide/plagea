@@ -40,20 +40,29 @@ import {
 import { Loader2, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
+type UserRole = "superadmin" | "admin" | "user"
+
 type AdminUser = {
   _id: string
   name: string
   email: string
-  role: "admin" | "user"
+  role: UserRole
+  departmentId: string | null
   isActive: boolean
   createdAt: string
+}
+
+type Department = {
+  _id: string
+  name: string
 }
 
 type UserFormState = {
   name: string
   email: string
   password: string
-  role: "admin" | "user"
+  role: UserRole
+  departmentId: string
   isActive: boolean
 }
 
@@ -62,12 +71,22 @@ const EMPTY_FORM: UserFormState = {
   email: "",
   password: "",
   role: "user",
+  departmentId: "",
   isActive: true,
+}
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  superadmin: "Superadmin",
+  admin: "Administrador",
+  user: "Utilizador",
 }
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth()
+  const isSuperAdmin = currentUser?.role === "superadmin"
+
   const [users, setUsers] = useState<AdminUser[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -95,6 +114,17 @@ export default function AdminUsersPage() {
     fetchUsers()
   }, [])
 
+  useEffect(() => {
+    if (!isSuperAdmin) return
+    fetch("/api/departments")
+      .then((response) => (response.ok ? response.json() : []))
+      .then(setDepartments)
+      .catch(() => setDepartments([]))
+  }, [isSuperAdmin])
+
+  const departmentName = (departmentId: string | null) =>
+    departments.find((d) => d._id === departmentId)?.name || "—"
+
   const openCreateDialog = () => {
     setEditingUser(null)
     setForm(EMPTY_FORM)
@@ -104,7 +134,14 @@ export default function AdminUsersPage() {
 
   const openEditDialog = (user: AdminUser) => {
     setEditingUser(user)
-    setForm({ name: user.name, email: user.email, password: "", role: user.role, isActive: user.isActive })
+    setForm({
+      name: user.name,
+      email: user.email,
+      password: "",
+      role: user.role,
+      departmentId: user.departmentId || "",
+      isActive: user.isActive,
+    })
     setFormError("")
     setDialogOpen(true)
   }
@@ -123,6 +160,7 @@ export default function AdminUsersPage() {
               name: form.name,
               role: form.role,
               isActive: form.isActive,
+              ...(isSuperAdmin ? { departmentId: form.departmentId || null } : {}),
               ...(form.password ? { password: form.password } : {}),
             }),
           })
@@ -168,7 +206,11 @@ export default function AdminUsersPage() {
             <ShieldCheck className="h-6 w-6 text-primary" />
             Administração de Utilizadores
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Gerir quem tem acesso ao PlaGeA e com que permissões</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isSuperAdmin
+              ? "Gerir utilizadores de todos os departamentos"
+              : "Gerir quem tem acesso ao PlaGeA no seu departamento"}
+          </p>
         </div>
         <Button onClick={openCreateDialog} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
@@ -196,6 +238,7 @@ export default function AdminUsersPage() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Papel</TableHead>
+                    {isSuperAdmin && <TableHead>Departamento</TableHead>}
                     <TableHead>Estado</TableHead>
                     <TableHead>Criado em</TableHead>
                     <TableHead className="text-right">Acções</TableHead>
@@ -207,10 +250,11 @@ export default function AdminUsersPage() {
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                          {user.role === "admin" ? "Administrador" : "Utilizador"}
+                        <Badge variant={user.role === "user" ? "secondary" : "default"}>
+                          {ROLE_LABEL[user.role]}
                         </Badge>
                       </TableCell>
+                      {isSuperAdmin && <TableCell>{departmentName(user.departmentId)}</TableCell>}
                       <TableCell>
                         <Badge variant={user.isActive ? "default" : "destructive"}>
                           {user.isActive ? "Activo" : "Inactivo"}
@@ -292,7 +336,7 @@ export default function AdminUsersPage() {
                 <Label>Papel</Label>
                 <Select
                   value={form.role}
-                  onValueChange={(value: "admin" | "user") => setForm((prev) => ({ ...prev, role: value }))}
+                  onValueChange={(value: UserRole) => setForm((prev) => ({ ...prev, role: value }))}
                   disabled={saving}
                 >
                   <SelectTrigger>
@@ -301,9 +345,32 @@ export default function AdminUsersPage() {
                   <SelectContent>
                     <SelectItem value="user">Utilizador</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
+                    {isSuperAdmin && <SelectItem value="superadmin">Superadmin</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>
+
+              {isSuperAdmin && form.role !== "superadmin" && (
+                <div className="space-y-2">
+                  <Label>Departamento</Label>
+                  <Select
+                    value={form.departmentId}
+                    onValueChange={(value) => setForm((prev) => ({ ...prev, departmentId: value }))}
+                    disabled={saving}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione o departamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept._id} value={dept._id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {editingUser && (
                 <div className="flex items-center justify-between">

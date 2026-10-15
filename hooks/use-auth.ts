@@ -7,7 +7,8 @@ type AuthUser = {
   id: string
   name: string
   email: string
-  role: "admin" | "user"
+  role: "superadmin" | "admin" | "user"
+  departmentId: string | null
 }
 
 export function useAuth() {
