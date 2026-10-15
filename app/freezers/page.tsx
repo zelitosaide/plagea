@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { Thermometer, Archive, Boxes, MapPin, Package, Settings, ChevronLeft, ChevronRight } from "lucide-react"
+import { Thermometer, Archive, Warehouse, MapPin, Package, Settings, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { EQUIPMENT_TYPE_LIST, getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
@@ -150,7 +150,7 @@ export default function FreezersPage() {
           </div>
           <Separator orientation="vertical" className="h-5 hidden sm:block" />
           <div className="flex items-center gap-2">
-            <Boxes className="h-4 w-4 text-muted-foreground" />
+            <Warehouse className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Capacidade Total</span>
             <span className="text-sm font-semibold text-foreground">{totalCapacity}</span>
           </div>

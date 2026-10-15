@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
-  Boxes,
+  Warehouse,
   Package,
   AlertTriangle,
   Calendar,
@@ -103,7 +103,7 @@ export default function Dashboard() {
       label: "Total de Equipamentos",
       value: stats.totalEquipment.toLocaleString(),
       helper: "Todos operacionais",
-      icon: Boxes,
+      icon: Warehouse,
       tone: "primary" as const,
     },
     {
@@ -147,7 +147,7 @@ export default function Dashboard() {
         </Link>
         <Link href="/freezers">
           <Button variant="outline" className="w-full h-11 gap-2">
-            <Boxes className="h-4 w-4" />
+            <Warehouse className="h-4 w-4" />
             Gerir Equipamentos
           </Button>
         </Link>
