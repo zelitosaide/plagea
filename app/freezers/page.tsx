@@ -88,7 +88,7 @@ export default function FreezersPage() {
 
   const handleViewSamples = (freezer: any) => {
     // Navigate to samples page with equipment filter
-    router.push(`/samples?equipment=${freezer._id}:${freezer.name}`)
+    router.push(`/samples?equipment=${freezer._id}`)
   }
 
   const fetchFreezers = async () => {

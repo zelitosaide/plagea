@@ -51,11 +51,18 @@ interface Sample {
   notes: string;
 }
 
+interface EquipmentOption {
+  _id: string;
+  code: string;
+  name: string;
+}
+
 export default function SamplesPage() {
   // const router = useRouter()
   const searchParams = useSearchParams();
 
   const [samples, setSamples] = useState<Sample[]>([]);
+  const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -76,7 +83,9 @@ export default function SamplesPage() {
       setCurrentPage(Number.parseInt(page));
     }
     if (equipment) {
-      setEquipmentFilter(equipment);
+      // Aceita tanto o formato antigo "id:nome" (links antigos guardados)
+      // como o id simples usado actualmente.
+      setEquipmentFilter(equipment.split(":")[0]);
     }
     if (type) {
       setFilterType(type);
@@ -101,7 +110,7 @@ export default function SamplesPage() {
     const matchesProject =
       filterProject === "all" || sample.project === filterProject;
     const matchesEquipment =
-      !equipmentFilter || sample.equipmentId === equipmentFilter.split(":")[0];
+      !equipmentFilter || sample.equipmentId === equipmentFilter;
 
     return matchesSearch && matchesType && matchesProject && matchesEquipment;
   });
@@ -202,9 +211,8 @@ export default function SamplesPage() {
   };
 
   const getEquipmentName = (equipmentId: string) => {
-    return equipmentId
-      ? equipmentId.split(":")[1] || "Unknown Equipment"
-      : "All Equipment";
+    const equipment = equipmentList.find((eq) => eq._id === equipmentId);
+    return equipment ? `${equipment.code} - ${equipment.name}` : "Equipamento desconhecido";
   };
 
   // Handle search and filter changes
@@ -218,6 +226,10 @@ export default function SamplesPage() {
 
   const handleProjectChange = (value: string) => {
     setFilterProject(value);
+  };
+
+  const handleEquipmentFilterChange = (value: string) => {
+    setEquipmentFilter(value === "all" ? null : value);
   };
 
   const fetchSamples = async () => {
@@ -236,8 +248,20 @@ export default function SamplesPage() {
     }
   };
 
+  const fetchEquipmentList = async () => {
+    try {
+      const response = await fetch("/api/equipment");
+      if (response.ok) {
+        setEquipmentList(await response.json());
+      }
+    } catch (error) {
+      console.log("Error fetching equipment:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSamples();
+    fetchEquipmentList();
   }, []);
 
   return (
@@ -280,14 +304,27 @@ export default function SamplesPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="sm:col-span-2">
                 <Input
                   placeholder="Pesquisar por código do paciente, tipo de amostra ou projecto…"
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                 />
               </div>
+              <Select value={equipmentFilter || "all"} onValueChange={handleEquipmentFilterChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Equipamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Equipamentos</SelectItem>
+                  {equipmentList.map((equipment) => (
+                    <SelectItem key={equipment._id} value={equipment._id}>
+                      {equipment.code} - {equipment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={filterType} onValueChange={handleTypeChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Tipo de Amostra" />
@@ -336,7 +373,7 @@ export default function SamplesPage() {
               Resultados da Amostra ({filteredSamples.length})
               {equipmentFilter && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">
-                  in {getEquipmentName(equipmentFilter)}
+                  em {getEquipmentName(equipmentFilter)}
                 </span>
               )}
             </CardTitle>
