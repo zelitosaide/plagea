@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PositionPicker } from "@/components/position-picker";
 import { TimePicker } from "@/components/time-picker";
@@ -103,7 +104,7 @@ export default function AddSamplePage() {
     e.preventDefault();
 
     if (occupiedSlotMatch) {
-      alert(
+      toast.error(
         `Esta posição já está ocupada pela amostra do paciente ${occupiedSlotMatch.patientCode}. Escolha outra posição.`
       );
       return;
@@ -130,19 +131,19 @@ export default function AddSamplePage() {
 
     for (const [key, value] of Object.entries(requiredFields)) {
       if (!value) {
-        alert(`Por favor, preencha todos campos obrigatórios`);
+        toast.error(`Por favor, preencha todos campos obrigatórios`);
         return;
       }
     }
 
     if (!pathComplete) {
-      alert("Por favor, preencha todos campos obrigatórios");
+      toast.error("Por favor, preencha todos campos obrigatórios");
       return;
     }
 
     // Validate sample quantity specifically
     if (!formData.sampleQuantity || parseFloat(formData.sampleQuantity) <= 0) {
-      alert("Por favor, insira uma quantidade válida da amostra (maior que 0)");
+      toast.error("Por favor, insira uma quantidade válida da amostra (maior que 0)");
       return;
     }
 
@@ -186,14 +187,14 @@ export default function AddSamplePage() {
           }
         }
 
-        alert("Amostra adicionada com sucesso!");
+        toast.success("Amostra adicionada com sucesso!");
         router.push(`/samples/${result._id}`);
       } else {
-        alert(result.error || "Falha ao adicionar a amostra");
+        toast.error(result.error || "Falha ao adicionar a amostra");
       }
     } catch (error) {
       console.error("Erro ao adicionar a amostra:", error);
-      alert("Falha ao adicionar a amostra");
+      toast.error("Falha ao adicionar a amostra");
     } finally {
       setLoading(false);
     }
@@ -370,7 +371,7 @@ export default function AddSamplePage() {
         setEquipmentList(data);
       }
     } catch (error) {
-      alert("Falha ao buscar equipamento");
+      toast.error("Falha ao buscar equipamento");
       console.log("Error fetching equipment:", error);
     }
   };
@@ -469,11 +470,11 @@ export default function AddSamplePage() {
         setBoxConfig({ rows, columns });
         setEditingBoxDimensions(false);
       } else {
-        alert("Falha ao guardar as dimensões da caixa");
+        toast.error("Falha ao guardar as dimensões da caixa");
       }
     } catch (error) {
       console.error("Error saving box dimensions:", error);
-      alert("Falha ao guardar as dimensões da caixa");
+      toast.error("Falha ao guardar as dimensões da caixa");
     } finally {
       setSavingBoxDimensions(false);
     }

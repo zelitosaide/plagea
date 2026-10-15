@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Save, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { EQUIPMENT_TYPE_LIST, getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -62,7 +63,7 @@ export default function AddFreezerPage() {
 
     for (const [, value] of Object.entries(requiredFields)) {
       if (!value) {
-        alert(`Por favor, preencha todos campos obrigatórios`)
+        toast.error(`Por favor, preencha todos campos obrigatórios`)
         return
       }
     }
@@ -91,14 +92,14 @@ export default function AddFreezerPage() {
       const result = await response.json()
 
       if (response.ok) {
-        alert("Equipamento adicionado com sucesso!")
+        toast.success("Equipamento adicionado com sucesso!")
         router.push("/freezers")
       } else {
-        alert(result.error || "Falha ao adicionar equipamento")
+        toast.error(result.error || "Falha ao adicionar equipamento")
       }
     } catch (error) {
       console.error("Error adding equipment:", error)
-      alert("Falha ao adicionar equipamento")
+      toast.error("Falha ao adicionar equipamento")
     } finally {
       setLoading(false)
     }

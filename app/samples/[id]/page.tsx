@@ -3,6 +3,8 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useConfirm } from "@/components/confirm-dialog-provider";
 import {
   Card,
   CardContent,
@@ -58,6 +60,7 @@ function daysBetween(a: string, b: string) {
 export default function SampleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const confirmDialog = useConfirm();
 
   const [sample, setSample] = useState<Sample | null>(null);
   const [equipment, setEquipment] = useState<Equipment | null>(null);
@@ -72,7 +75,7 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
       setTimeout(() => setCopied((current) => (current === which ? null : current)), 2000);
     } catch (error) {
       console.error("Error copying to clipboard:", error);
-      alert(`Não foi possível copiar automaticamente. Copie manualmente:\n\n${text}`);
+      toast.error("Não foi possível copiar automaticamente", { description: text });
     }
   };
 
@@ -98,7 +101,7 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
         }
       } catch (error) {
         console.error("Error fetching sample:", error);
-        alert("Falha ao buscar a amostra");
+        toast.error("Falha ao buscar a amostra");
       } finally {
         setLoading(false);
       }
@@ -109,16 +112,20 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
 
   const handleDelete = async () => {
     if (!sample) return;
-    const confirmed = confirm(
-      `Tem a certeza que quer eliminar a amostra ${sample.patientCode}?\n\nEsta acção não pode ser revertida.`
-    );
+    const confirmed = await confirmDialog({
+      title: "Eliminar amostra?",
+      description: `Tem a certeza que quer eliminar a amostra ${sample.patientCode}? Esta acção não pode ser revertida.`,
+      confirmLabel: "Eliminar",
+      variant: "destructive",
+    });
     if (!confirmed) return;
 
     const response = await fetch(`/api/samples/${sample._id}`, { method: "DELETE" });
     if (response.ok) {
+      toast.success("Amostra eliminada com sucesso");
       router.push("/samples");
     } else {
-      alert("Falha ao eliminar a amostra");
+      toast.error("Falha ao eliminar a amostra");
     }
   };
 

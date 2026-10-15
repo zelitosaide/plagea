@@ -24,11 +24,14 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { useConfirm } from "@/components/confirm-dialog-provider"
 import { getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
 
 export default function FreezerSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const confirmDialog = useConfirm()
   const [loading, setLoading] = useState(false)
   const [freezerLoading, setFreezerLoading] = useState(true)
   const [formData, setFormData] = useState({
@@ -63,7 +66,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
         setNextMaintenance(data.nextMaintenance)
       }
     } catch (error) {
-      alert("Falha ao buscar equipamento")
+      toast.error("Falha ao buscar equipamento")
       console.log("Error fetching equipment:", error)
     } finally {
       setFreezerLoading(false)
@@ -90,11 +93,11 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
           capacity: Number.parseInt(formData.capacity || "0"),
         }),
       })
-      alert("Equipamento atualizado com sucesso!")
+      toast.success("Equipamento atualizado com sucesso!")
       router.push("/freezers")
     } catch (error) {
       console.error("Falha ao atualizar as configurações do equipamento:", error)
-      alert("Falha ao atualizar as configurações do equipamento")
+      toast.error("Falha ao atualizar as configurações do equipamento")
     } finally {
       setLoading(false)
     }
@@ -124,29 +127,32 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
     ) * 100
 
     const handleDelete = async () => {
-      const confirmed = window.confirm(
-        `Are you sure you want to delete "${formData.name}"? This action cannot be undone and will permanently remove all associated data.`,
-      )
-  
+      const confirmed = await confirmDialog({
+        title: "Eliminar equipamento?",
+        description: `Tem a certeza que quer eliminar "${formData.name}"? Esta acção não pode ser revertida e remove permanentemente todos os dados associados.`,
+        confirmLabel: "Eliminar",
+        variant: "destructive",
+      })
+
       if (!confirmed) return
-  
+
       setLoading(true)
-  
+
       try {
         const response = await fetch(`/api/equipment/${id}`, {
           method: "DELETE",
         });
 
         if (response.ok) {
-          alert("Equipamento apagado com sucesso");
+          toast.success("Equipamento apagado com sucesso");
           router.push("/freezers"); // Navigate only after successful deletion
         } else {
           const errorData = await response.json();
-          alert(`Falha ao apagar equipamento: ${errorData.error || "Unknown error"}`);
+          toast.error(`Falha ao apagar equipamento: ${errorData.error || "Unknown error"}`);
         }
       } catch (error) {
         console.error("Error deleting equipment:", error)
-        alert("Falha ao apagar equipamento")
+        toast.error("Falha ao apagar equipamento")
       } finally {
         setLoading(false)
       }

@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator"
 import { Thermometer, Archive, Warehouse, MapPin, Package, Settings, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 import { EQUIPMENT_TYPE_LIST, getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
 
 type Freezer = {
@@ -26,6 +28,7 @@ type Freezer = {
 
 export default function FreezersPage() {
   const [freezers, setFreezers] = useState<Freezer[]>([])
+  const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [typeFilter, setTypeFilter] = useState<EquipmentType | "all">("all")
   const itemsPerPage = 6
@@ -100,10 +103,10 @@ export default function FreezersPage() {
         console.log(data);
       }
     } catch (error) {
-      alert("Falha ao buscar equipamento")
+      toast.error("Falha ao buscar equipamento")
       console.log("Error fetching equipment:", error)
     } finally {
-      // setLoading(false)
+      setLoading(false)
     }
   }
 
@@ -183,6 +186,43 @@ export default function FreezersPage() {
             ))}
           </div>
         </div>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-6 w-2/3" />
+                  <Skeleton className="h-4 w-1/2 mt-2" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-2 w-full" />
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-9 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredFreezers.length === 0 ? (
+          <Card>
+            <CardContent className="py-16 flex flex-col items-center text-center gap-3">
+              <Warehouse className="h-10 w-10 text-muted-foreground" />
+              <div>
+                <p className="font-medium text-foreground">
+                  {typeFilter === "all" ? "Ainda não há equipamento registado" : "Nenhum equipamento deste tipo"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {typeFilter === "all"
+                    ? "Adicione o primeiro congelador, arquivo de blocos ou arquivo de lâminas do seu departamento."
+                    : "Experimente outro filtro de tipo, ou adicione um novo equipamento."}
+                </p>
+              </div>
+              <Link href="/freezers/add">
+                <Button className="mt-2">Adicionar Novo Equipamento</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentFreezers.map((freezer) => {
             const utilizationPercentage = Math.round((freezer.currentSamples / freezer.capacity) * 100)
@@ -256,9 +296,10 @@ export default function FreezersPage() {
             )
           })}
         </div>
+        )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!loading && totalPages > 1 && (
           <div className="flex justify-center items-center mt-6 mb-8">
             <div className="flex items-center gap-2">
               <Button

@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
 import {
   BarChart3,
   BookOpen,
@@ -9,7 +11,9 @@ import {
   FlaskConical,
   Home,
   LogOut,
+  Moon,
   ShieldCheck,
+  Sun,
   TestTube,
   Warehouse,
 } from "lucide-react"
@@ -38,6 +42,14 @@ const navigation = [
 export function AppSidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isDark = mounted && resolvedTheme === "dark"
 
   const items = [...navigation]
   if (user?.role === "admin" || user?.role === "superadmin") {
@@ -101,10 +113,22 @@ export function AppSidebar() {
             )}
           </div>
         )}
-        <Button variant="outline" onClick={logout} className="w-full justify-center gap-2">
-          <LogOut className="h-4 w-4" />
-          Sair
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            aria-label={isDark ? "Mudar para tema claro" : "Mudar para tema escuro"}
+            title={isDark ? "Mudar para tema claro" : "Mudar para tema escuro"}
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+          <Button variant="outline" onClick={logout} className="flex-1 justify-center gap-2">
+            <LogOut className="h-4 w-4" />
+            Sair
+          </Button>
+        </div>
       </SidebarFooter>
     </Sidebar>
   )

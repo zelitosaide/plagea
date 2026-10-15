@@ -33,6 +33,8 @@ import {
   // useRouter,
   useSearchParams,
 } from "next/navigation";
+import { toast } from "sonner";
+import { useConfirm } from "@/components/confirm-dialog-provider";
 
 interface Sample {
   _id: string;
@@ -60,10 +62,11 @@ interface EquipmentOption {
 export default function SamplesPage() {
   // const router = useRouter()
   const searchParams = useSearchParams();
+  const confirmDialog = useConfirm();
 
   const [samples, setSamples] = useState<Sample[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterProject, setFilterProject] = useState("all");
@@ -180,29 +183,26 @@ export default function SamplesPage() {
     return expiry <= thirtyDaysFromNow;
   };
 
-  const handleDeleteSample = (sample: Sample) => {
-    const confirmed = confirm(
-      `Are you sure you want to delete sample ${sample.patientCode}?\n\nThis action cannot be undone.`
-    );
+  const handleDeleteSample = async (sample: Sample) => {
+    const confirmed = await confirmDialog({
+      title: "Eliminar amostra?",
+      description: `Tem a certeza que quer eliminar a amostra ${sample.patientCode}? Esta acção não pode ser revertida.`,
+      confirmLabel: "Eliminar",
+      variant: "destructive",
+    });
+    if (!confirmed) return;
 
-    if (confirmed) {
-      // Call API to delete sample
-      try {
-        fetch(`/api/samples/${sample._id}`, {
-          method: "DELETE",
-        }).then((response) => {
-          if (response.ok) {
-            alert("Sample deleted successfully");
-            // Refresh samples
-            fetchSamples();
-          } else {
-            alert("Failed to delete sample");
-          }
-        });
-      } catch (error) {
-        console.error("Error deleting sample:", error);
-        alert("Failed to delete sample");
+    try {
+      const response = await fetch(`/api/samples/${sample._id}`, { method: "DELETE" });
+      if (response.ok) {
+        toast.success("Amostra eliminada com sucesso");
+        fetchSamples();
+      } else {
+        toast.error("Falha ao eliminar a amostra");
       }
+    } catch (error) {
+      console.error("Error deleting sample:", error);
+      toast.error("Falha ao eliminar a amostra");
     }
   };
 
@@ -241,10 +241,10 @@ export default function SamplesPage() {
         console.log(data);
       }
     } catch (error) {
-      alert("Falha ao buscar amostras");
+      toast.error("Falha ao buscar amostras");
       console.log("Error fetching samples:", error);
     } finally {
-      // setLoading(false)
+      setLoading(false);
     }
   };
 

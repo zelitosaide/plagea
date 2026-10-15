@@ -38,7 +38,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Loader2, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
+import { useConfirm } from "@/components/confirm-dialog-provider"
 
 type UserRole = "superadmin" | "admin" | "user"
 
@@ -83,6 +85,7 @@ const ROLE_LABEL: Record<UserRole, string> = {
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth()
+  const confirmDialog = useConfirm()
   const isSuperAdmin = currentUser?.role === "superadmin"
 
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -183,19 +186,23 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleDelete = (user: AdminUser) => {
-    const confirmed = confirm(
-      `Tem a certeza que quer remover o utilizador ${user.name} (${user.email})?\n\nEsta acção não pode ser revertida.`
-    )
+  const handleDelete = async (user: AdminUser) => {
+    const confirmed = await confirmDialog({
+      title: "Remover utilizador?",
+      description: `Tem a certeza que quer remover o utilizador ${user.name} (${user.email})? Esta acção não pode ser revertida.`,
+      confirmLabel: "Remover",
+      variant: "destructive",
+    })
     if (!confirmed) return
 
-    fetch(`/api/admin/users/${user._id}`, { method: "DELETE" }).then((response) => {
-      if (response.ok) {
-        fetchUsers()
-      } else {
-        response.json().then((data) => alert(data?.error || "Falha ao remover utilizador."))
-      }
-    })
+    const response = await fetch(`/api/admin/users/${user._id}`, { method: "DELETE" })
+    if (response.ok) {
+      toast.success("Utilizador removido com sucesso")
+      fetchUsers()
+    } else {
+      const data = await response.json().catch(() => null)
+      toast.error(data?.error || "Falha ao remover utilizador.")
+    }
   }
 
   return (

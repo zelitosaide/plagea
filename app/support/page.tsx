@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, FlaskConical, HelpCircle, Phone, Mail, Clock, MessageSquare, Book, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { toast } from "sonner"
 
 export default function SupportPage() {
   const [formData, setFormData] = useState({
@@ -28,7 +29,7 @@ export default function SupportPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // Handle form submission
-    alert("Support request submitted successfully! We'll get back to you within 24 hours.")
+    toast.success("Pedido de suporte enviado com sucesso! Responderemos dentro de 24 horas.")
     setFormData({
       name: "",
       email: "",
