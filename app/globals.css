@@ -178,3 +178,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Ao imprimir/exportar uma página para PDF (ex. Relatórios), a navegação
+   da app não deve aparecer — só o conteúdo. */
+@media print {
+  [data-sidebar="sidebar"],
+  [data-sidebar="rail"],
+  [data-sidebar="trigger"] {
+    display: none !important;
+  }
+}

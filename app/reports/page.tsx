@@ -1,12 +1,23 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
-import { Loader2, TrendingUp, AlertTriangle, AlertOctagon, Package, Building2 } from "lucide-react"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import {
+  Loader2,
+  TrendingUp,
+  AlertTriangle,
+  AlertOctagon,
+  Package,
+  Building2,
+  Download,
+  Printer,
+} from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 
 type CountItem = { value: string; count: number; percentage: number }
@@ -55,6 +66,12 @@ const utilizationColor = (percentage: number) => {
   return "text-primary"
 }
 
+const utilizationFill = (percentage: number) => {
+  if (percentage >= 90) return "hsl(var(--destructive))"
+  if (percentage >= 75) return "#d97706"
+  return "hsl(var(--chart-2))"
+}
+
 const daysBetween = (a: string, b: string) => Math.round((new Date(a).getTime() - new Date(b).getTime()) / (1000 * 60 * 60 * 24))
 
 const formatMonth = (month: string) => {
@@ -72,6 +89,97 @@ function defaultFrom() {
 function todayStr() {
   return new Date().toISOString().split("T")[0]
 }
+
+// Escapa um valor para uma célula CSV (RFC 4180): envolve em aspas sempre
+// que contiver vírgulas, aspas ou quebras de linha.
+function csvCell(value: string | number): string {
+  const text = String(value)
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`
+  }
+  return text
+}
+
+function buildReportCSV(data: ReportData, isSuperAdmin: boolean): string {
+  const lines: string[] = []
+  const section = (title: string, headers: string[], rows: (string | number)[][]) => {
+    lines.push(title)
+    lines.push(headers.map(csvCell).join(","))
+    rows.forEach((row) => lines.push(row.map(csvCell).join(",")))
+    lines.push("")
+  }
+
+  lines.push(`Relatório PlaGeA — ${data.range.from} a ${data.range.to}`)
+  lines.push("")
+
+  section(
+    "Resumo",
+    ["Métrica", "Valor"],
+    [
+      ["Amostras no Período", data.totalSamplesInRange],
+      ["A Expirar em Breve (30 dias)", data.expiringSoon.length],
+      ["Expiradas por Descartar", data.expiredNotDiscarded.length],
+    ]
+  )
+
+  section(
+    "Amostras por Tipo",
+    ["Tipo", "Quantidade", "Percentagem"],
+    data.samplesByType.map((item) => [item.value, item.count, `${item.percentage}%`])
+  )
+
+  section(
+    "Amostras por Projecto",
+    ["Projecto", "Quantidade", "Percentagem"],
+    data.samplesByProject.map((item) => [item.value, item.count, `${item.percentage}%`])
+  )
+
+  section(
+    "Amostras por Mês",
+    ["Mês", "Quantidade"],
+    data.samplesOverTime.map((item) => [item.month, item.count])
+  )
+
+  section(
+    "Ocupação de Equipamento",
+    ["Código", "Nome", "Tipo", "Amostras", "Capacidade", "Utilização %"],
+    data.equipmentOccupancy.map((item) => [
+      item.code,
+      item.name,
+      item.typeLabel,
+      item.currentSamples,
+      item.capacity,
+      item.utilizationPercentage,
+    ])
+  )
+
+  section(
+    "A Expirar em Breve",
+    ["Paciente", "Tipo", "Projecto", "Equipamento", "Data de Validade"],
+    data.expiringSoon.map((s) => [s.patientCode, s.sampleType, s.project, s.equipmentCode, s.expiryDate])
+  )
+
+  section(
+    "Expiradas por Descartar",
+    ["Paciente", "Tipo", "Projecto", "Equipamento", "Data de Validade"],
+    data.expiredNotDiscarded.map((s) => [s.patientCode, s.sampleType, s.project, s.equipmentCode, s.expiryDate])
+  )
+
+  if (isSuperAdmin && data.departmentComparison) {
+    section(
+      "Visão Institucional",
+      ["Departamento", "Amostras", "Equipamentos", "Utilização %"],
+      data.departmentComparison.map((d) => [d.departmentName, d.totalSamples, d.totalEquipment, d.utilizationPercentage])
+    )
+  }
+
+  return lines.join("\n")
+}
+
+const timeChartConfig = { count: { label: "Amostras", color: "hsl(var(--chart-2))" } } satisfies ChartConfig
+const typeChartConfig = { count: { label: "Amostras", color: "hsl(var(--chart-1))" } } satisfies ChartConfig
+const projectChartConfig = { count: { label: "Amostras", color: "hsl(var(--chart-3))" } } satisfies ChartConfig
+const utilizationChartConfig = { utilizationPercentage: { label: "Utilização %" } } satisfies ChartConfig
 
 export default function ReportsPage() {
   const { user } = useAuth()
@@ -98,18 +206,44 @@ export default function ReportsPage() {
           data.equipmentOccupancy.length
       )
     : 0
-  const maxMonthCount = Math.max(1, ...(data?.samplesOverTime.map((m) => m.count) || [1]))
+
+  const handleExportCSV = () => {
+    if (!data) return
+    const csv = buildReportCSV(data, isSuperAdmin)
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `relatorio-plagea_${from}_a_${to}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const timeChartData = data?.samplesOverTime.map((item) => ({ month: formatMonth(item.month), count: item.count })) || []
+  const typeChartData = data?.samplesByType.map((item) => ({ name: item.value, count: item.count, percentage: item.percentage })) || []
+  const projectChartData = data?.samplesByProject.map((item) => ({ name: item.value, count: item.count, percentage: item.percentage })) || []
+  const occupancyChartData = data?.equipmentOccupancy.map((item) => ({
+    name: `${item.code} - ${item.name}`,
+    utilizationPercentage: item.utilizationPercentage,
+    isNearFull: item.isNearFull,
+  })) || []
+  const departmentChartData = data?.departmentComparison?.map((d) => ({
+    name: d.departmentName,
+    utilizationPercentage: d.utilizationPercentage,
+  })) || []
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Relatórios</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Visão geral da actividade de amostras e ocupação de equipamento
           </p>
         </div>
-        <div className="flex items-end gap-3">
+        <div className="flex items-end gap-3 flex-wrap">
           <div className="space-y-1">
             <Label htmlFor="from" className="text-xs text-muted-foreground">De</Label>
             <Input id="from" type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9" />
@@ -118,8 +252,23 @@ export default function ReportsPage() {
             <Label htmlFor="to" className="text-xs text-muted-foreground">Até</Label>
             <Input id="to" type="date" value={to} min={from} max={todayStr()} onChange={(e) => setTo(e.target.value)} className="h-9" />
           </div>
+          <Button variant="outline" className="h-9 gap-2" onClick={handleExportCSV} disabled={!data}>
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+          <Button variant="outline" className="h-9 gap-2" onClick={() => window.print()} disabled={!data}>
+            <Printer className="h-4 w-4" />
+            Imprimir / PDF
+          </Button>
         </div>
       </div>
+
+      {/* Visível apenas na impressão/exportação para PDF, para dar contexto ao período coberto */}
+      {data && (
+        <p className="hidden print:block text-sm text-muted-foreground">
+          Relatório PlaGeA — período de {data.range.from} a {data.range.to}
+        </p>
+      )}
 
       {loading || !data ? (
         <div className="flex items-center justify-center py-16">
@@ -175,131 +324,156 @@ export default function ReportsPage() {
           </div>
 
           {/* Samples over time */}
-          <Card>
+          <Card className="print:break-inside-avoid">
             <CardHeader>
               <CardTitle>Amostras ao Longo do Tempo</CardTitle>
               <CardDescription>Entradas de amostras por mês, no período seleccionado</CardDescription>
             </CardHeader>
             <CardContent>
-              {data.samplesOverTime.length === 0 ? (
+              {timeChartData.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem amostras neste período.</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <div className="flex items-end gap-3 h-40 min-w-max px-1">
-                    {data.samplesOverTime.map((item) => (
-                      <div key={item.month} className="flex flex-col items-center justify-end gap-1 w-12 shrink-0">
-                        <span className="text-xs font-medium text-foreground">{item.count}</span>
-                        <div
-                          className="w-6 rounded-t-sm bg-primary"
-                          style={{ height: `${Math.max(4, (item.count / maxMonthCount) * 100)}px` }}
-                        />
-                        <span className="text-[11px] text-muted-foreground">{formatMonth(item.month)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ChartContainer config={timeChartConfig} className="aspect-auto h-64 w-full">
+                  <BarChart data={timeChartData} margin={{ top: 16, left: -16 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="count" fill="var(--color-count)" radius={4}>
+                      <LabelList dataKey="count" position="top" className="fill-foreground text-xs" />
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
               )}
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Samples by Type */}
-            <Card>
+            <Card className="print:break-inside-avoid">
               <CardHeader>
                 <CardTitle>Amostras por Tipo</CardTitle>
                 <CardDescription>Distribuição de tipos de amostra no período</CardDescription>
               </CardHeader>
               <CardContent>
-                {data.samplesByType.length === 0 ? (
+                {typeChartData.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Sem dados neste período.</p>
                 ) : (
-                  <div className="space-y-4">
-                    {data.samplesByType.map((item) => (
-                      <div key={item.value} className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Badge variant="secondary" className="shrink-0">{item.value}</Badge>
-                          <span className="text-sm font-medium text-muted-foreground shrink-0">{item.count}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Progress value={item.percentage} className="w-20 h-2" />
-                          <span className="text-sm text-muted-foreground w-9 text-right">{item.percentage}%</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <ChartContainer
+                    config={typeChartConfig}
+                    className="aspect-auto w-full"
+                    style={{ height: Math.max(160, typeChartData.length * 40) }}
+                  >
+                    <BarChart data={typeChartData} layout="vertical" margin={{ left: 8 }}>
+                      <XAxis type="number" hide allowDecimals={false} />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        tickLine={false}
+                        axisLine={false}
+                        width={110}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <ChartTooltip
+                        content={<ChartTooltipContent />}
+                        formatter={(value, _name, item) => `${value} amostras (${item.payload.percentage}%)`}
+                      />
+                      <Bar dataKey="count" fill="var(--color-count)" radius={4}>
+                        <LabelList dataKey="count" position="right" className="fill-foreground text-xs" />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
                 )}
               </CardContent>
             </Card>
 
             {/* Samples by Project */}
-            <Card>
+            <Card className="print:break-inside-avoid">
               <CardHeader>
                 <CardTitle>Amostras por Projecto</CardTitle>
                 <CardDescription>Distribuição por projecto de investigação no período</CardDescription>
               </CardHeader>
               <CardContent>
-                {data.samplesByProject.length === 0 ? (
+                {projectChartData.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Sem dados neste período.</p>
                 ) : (
-                  <div className="space-y-4">
-                    {data.samplesByProject.map((item) => (
-                      <div key={item.value} className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-3 h-3 rounded-full bg-primary shrink-0" />
-                          <span className="text-sm font-medium truncate">{item.value}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-sm text-muted-foreground">{item.count}</span>
-                          <Progress value={item.percentage} className="w-20 h-2" />
-                          <span className="text-sm text-muted-foreground w-9 text-right">{item.percentage}%</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <ChartContainer
+                    config={projectChartConfig}
+                    className="aspect-auto w-full"
+                    style={{ height: Math.max(160, projectChartData.length * 40) }}
+                  >
+                    <BarChart data={projectChartData} layout="vertical" margin={{ left: 8 }}>
+                      <XAxis type="number" hide allowDecimals={false} />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        tickLine={false}
+                        axisLine={false}
+                        width={110}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <ChartTooltip
+                        content={<ChartTooltipContent />}
+                        formatter={(value, _name, item) => `${value} amostras (${item.payload.percentage}%)`}
+                      />
+                      <Bar dataKey="count" fill="var(--color-count)" radius={4}>
+                        <LabelList dataKey="count" position="right" className="fill-foreground text-xs" />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
                 )}
               </CardContent>
             </Card>
           </div>
 
           {/* Equipment occupancy */}
-          <Card>
+          <Card className="print:break-inside-avoid">
             <CardHeader>
               <CardTitle>Ocupação de Equipamento</CardTitle>
               <CardDescription>Estado actual de todos os congeladores, arquivos de blocos e arquivos de lâminas</CardDescription>
             </CardHeader>
             <CardContent>
-              {data.equipmentOccupancy.length === 0 ? (
+              {occupancyChartData.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem equipamento registado.</p>
               ) : (
-                <div className="space-y-4">
-                  {data.equipmentOccupancy.map((item) => (
-                    <div key={item._id} className="space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-sm font-medium truncate">{item.code} - {item.name}</span>
-                          <Badge variant="outline" className="shrink-0">{item.typeLabel}</Badge>
-                          {item.isNearFull && (
-                            <Badge variant="destructive" className="shrink-0 flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              Quase cheio
-                            </Badge>
-                          )}
-                        </div>
-                        <span className="text-sm text-muted-foreground shrink-0">
-                          {item.currentSamples}/{item.capacity} ({item.utilizationPercentage}%)
-                        </span>
-                      </div>
-                      <Progress value={item.utilizationPercentage} className={`h-2 ${utilizationColor(item.utilizationPercentage)}`} />
+                <>
+                  <ChartContainer
+                    config={utilizationChartConfig}
+                    className="aspect-auto w-full"
+                    style={{ height: Math.max(160, occupancyChartData.length * 40) }}
+                  >
+                    <BarChart data={occupancyChartData} layout="vertical" margin={{ left: 8 }}>
+                      <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
+                      <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={160} tick={{ fontSize: 12 }} />
+                      <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
+                      <Bar dataKey="utilizationPercentage" radius={4}>
+                        {occupancyChartData.map((item, index) => (
+                          <Cell key={index} fill={utilizationFill(item.utilizationPercentage)} />
+                        ))}
+                        <LabelList dataKey="utilizationPercentage" position="right" className="fill-foreground text-xs" formatter={(v: number) => `${v}%`} />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                  {data.equipmentOccupancy.some((item) => item.isNearFull) && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {data.equipmentOccupancy
+                        .filter((item) => item.isNearFull)
+                        .map((item) => (
+                          <Badge key={item._id} variant="destructive" className="flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            {item.code} quase cheio
+                          </Badge>
+                        ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Expiring soon */}
-            <Card>
+            <Card className="print:break-inside-avoid">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5 text-amber-500" />
@@ -311,7 +485,7 @@ export default function ReportsPage() {
                 {data.expiringSoon.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma amostra a expirar em breve.</p>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-3 max-h-96 overflow-y-auto print:max-h-none">
                     {data.expiringSoon.map((sample) => (
                       <div key={sample._id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                         <div className="min-w-0">
@@ -332,7 +506,7 @@ export default function ReportsPage() {
             </Card>
 
             {/* Expired, not discarded */}
-            <Card>
+            <Card className="print:break-inside-avoid">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertOctagon className="h-5 w-5 text-destructive" />
@@ -344,7 +518,7 @@ export default function ReportsPage() {
                 {data.expiredNotDiscarded.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma amostra expirada pendente.</p>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-3 max-h-96 overflow-y-auto print:max-h-none">
                     {data.expiredNotDiscarded.map((sample) => (
                       <div key={sample._id} className="flex items-center justify-between p-3 border border-destructive/30 bg-destructive/5 rounded-lg">
                         <div className="min-w-0">
@@ -367,7 +541,7 @@ export default function ReportsPage() {
 
           {/* Department comparison (superadmin only) */}
           {isSuperAdmin && data.departmentComparison && (
-            <Card>
+            <Card className="print:break-inside-avoid">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
@@ -376,22 +550,26 @@ export default function ReportsPage() {
                 <CardDescription>Comparação entre todos os departamentos</CardDescription>
               </CardHeader>
               <CardContent>
-                {data.departmentComparison.length === 0 ? (
+                {departmentChartData.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhum departamento registado.</p>
                 ) : (
-                  <div className="space-y-4">
-                    {data.departmentComparison.map((dept) => (
-                      <div key={dept.departmentId} className="space-y-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-medium">{dept.departmentName}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {dept.totalSamples} amostras · {dept.totalEquipment} equipamentos · {dept.utilizationPercentage}%
-                          </span>
-                        </div>
-                        <Progress value={dept.utilizationPercentage} className={`h-2 ${utilizationColor(dept.utilizationPercentage)}`} />
-                      </div>
-                    ))}
-                  </div>
+                  <ChartContainer
+                    config={utilizationChartConfig}
+                    className="aspect-auto w-full"
+                    style={{ height: Math.max(160, departmentChartData.length * 40) }}
+                  >
+                    <BarChart data={departmentChartData} layout="vertical" margin={{ left: 8 }}>
+                      <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
+                      <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={130} tick={{ fontSize: 12 }} />
+                      <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
+                      <Bar dataKey="utilizationPercentage" radius={4}>
+                        {departmentChartData.map((item, index) => (
+                          <Cell key={index} fill={utilizationFill(item.utilizationPercentage)} />
+                        ))}
+                        <LabelList dataKey="utilizationPercentage" position="right" className="fill-foreground text-xs" formatter={(v: number) => `${v}%`} />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
                 )}
               </CardContent>
             </Card>
