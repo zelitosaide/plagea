@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -176,10 +175,17 @@ function buildReportCSV(data: ReportData, isSuperAdmin: boolean): string {
   return lines.join("\n")
 }
 
-const timeChartConfig = { count: { label: "Amostras", color: "hsl(var(--chart-2))" } } satisfies ChartConfig
-const typeChartConfig = { count: { label: "Amostras", color: "hsl(var(--chart-1))" } } satisfies ChartConfig
-const projectChartConfig = { count: { label: "Amostras", color: "hsl(var(--chart-3))" } } satisfies ChartConfig
+// Uma única cor (o teal primário da app) para todos os gráficos de
+// contagem simples — mantém a identidade visual consistente em vez do
+// arco-íris genérico de chart-1/2/3 do shadcn. As cores de
+// semáforo (vermelho/âmbar/verde) ficam reservadas para os gráficos de
+// utilização, onde a cor é sinal, não decoração.
+const countChartConfig = { count: { label: "Amostras", color: "hsl(var(--primary))" } } satisfies ChartConfig
 const utilizationChartConfig = { utilizationPercentage: { label: "Utilização %" } } satisfies ChartConfig
+
+function truncateLabel(value: string, max = 20): string {
+  return value.length > max ? `${value.slice(0, max - 1)}…` : value
+}
 
 export default function ReportsPage() {
   const { user } = useAuth()
@@ -333,14 +339,14 @@ export default function ReportsPage() {
               {timeChartData.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem amostras neste período.</p>
               ) : (
-                <ChartContainer config={timeChartConfig} className="aspect-auto h-64 w-full">
-                  <BarChart data={timeChartData} margin={{ top: 16, left: -16 }}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                <ChartContainer config={countChartConfig} className="aspect-auto h-64 w-full">
+                  <BarChart data={timeChartData} margin={{ top: 24, right: 8, left: -16 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} />
                     <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="count" fill="var(--color-count)" radius={4}>
-                      <LabelList dataKey="count" position="top" className="fill-foreground text-xs" />
+                    <ChartTooltip content={<ChartTooltipContent hideLabel={false} />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} />
+                    <Bar dataKey="count" fill="var(--color-count)" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                      <LabelList dataKey="count" position="top" offset={8} className="fill-foreground text-xs font-medium" />
                     </Bar>
                   </BarChart>
                 </ChartContainer>
@@ -360,26 +366,29 @@ export default function ReportsPage() {
                   <p className="text-sm text-muted-foreground">Sem dados neste período.</p>
                 ) : (
                   <ChartContainer
-                    config={typeChartConfig}
+                    config={countChartConfig}
                     className="aspect-auto w-full"
-                    style={{ height: Math.max(160, typeChartData.length * 40) }}
+                    style={{ height: Math.max(140, typeChartData.length * 44) }}
                   >
-                    <BarChart data={typeChartData} layout="vertical" margin={{ left: 8 }}>
+                    <BarChart data={typeChartData} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 4 }} barCategoryGap={10}>
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" />
                       <XAxis type="number" hide allowDecimals={false} />
                       <YAxis
                         dataKey="name"
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={110}
+                        width={120}
                         tick={{ fontSize: 12 }}
+                        tickFormatter={(value: string) => truncateLabel(value)}
                       />
                       <ChartTooltip
+                        cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
                         content={<ChartTooltipContent />}
                         formatter={(value, _name, item) => `${value} amostras (${item.payload.percentage}%)`}
                       />
-                      <Bar dataKey="count" fill="var(--color-count)" radius={4}>
-                        <LabelList dataKey="count" position="right" className="fill-foreground text-xs" />
+                      <Bar dataKey="count" fill="var(--color-count)" radius={[0, 6, 6, 0]} maxBarSize={22}>
+                        <LabelList dataKey="count" position="right" offset={8} className="fill-foreground text-xs font-medium" />
                       </Bar>
                     </BarChart>
                   </ChartContainer>
@@ -398,26 +407,29 @@ export default function ReportsPage() {
                   <p className="text-sm text-muted-foreground">Sem dados neste período.</p>
                 ) : (
                   <ChartContainer
-                    config={projectChartConfig}
+                    config={countChartConfig}
                     className="aspect-auto w-full"
-                    style={{ height: Math.max(160, projectChartData.length * 40) }}
+                    style={{ height: Math.max(140, projectChartData.length * 44) }}
                   >
-                    <BarChart data={projectChartData} layout="vertical" margin={{ left: 8 }}>
+                    <BarChart data={projectChartData} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 4 }} barCategoryGap={10}>
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" />
                       <XAxis type="number" hide allowDecimals={false} />
                       <YAxis
                         dataKey="name"
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={110}
+                        width={120}
                         tick={{ fontSize: 12 }}
+                        tickFormatter={(value: string) => truncateLabel(value)}
                       />
                       <ChartTooltip
+                        cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
                         content={<ChartTooltipContent />}
                         formatter={(value, _name, item) => `${value} amostras (${item.payload.percentage}%)`}
                       />
-                      <Bar dataKey="count" fill="var(--color-count)" radius={4}>
-                        <LabelList dataKey="count" position="right" className="fill-foreground text-xs" />
+                      <Bar dataKey="count" fill="var(--color-count)" radius={[0, 6, 6, 0]} maxBarSize={22}>
+                        <LabelList dataKey="count" position="right" offset={8} className="fill-foreground text-xs font-medium" />
                       </Bar>
                     </BarChart>
                   </ChartContainer>
@@ -437,35 +449,49 @@ export default function ReportsPage() {
                 <p className="text-sm text-muted-foreground">Sem equipamento registado.</p>
               ) : (
                 <>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded-xs bg-primary" /> Normal
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded-xs bg-amber-600" /> Alto (≥75%)
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded-xs bg-destructive" /> Quase cheio (≥90%)
+                    </span>
+                  </div>
                   <ChartContainer
                     config={utilizationChartConfig}
                     className="aspect-auto w-full"
-                    style={{ height: Math.max(160, occupancyChartData.length * 40) }}
+                    style={{ height: Math.max(140, occupancyChartData.length * 44) }}
                   >
-                    <BarChart data={occupancyChartData} layout="vertical" margin={{ left: 8 }}>
+                    <BarChart data={occupancyChartData} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 4 }} barCategoryGap={10}>
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" />
                       <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
-                      <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={160} tick={{ fontSize: 12 }} />
-                      <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
-                      <Bar dataKey="utilizationPercentage" radius={4}>
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        tickLine={false}
+                        axisLine={false}
+                        width={150}
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value: string) => truncateLabel(value, 22)}
+                      />
+                      <ChartTooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
+                      <Bar dataKey="utilizationPercentage" radius={[0, 6, 6, 0]} maxBarSize={22}>
                         {occupancyChartData.map((item, index) => (
                           <Cell key={index} fill={utilizationFill(item.utilizationPercentage)} />
                         ))}
-                        <LabelList dataKey="utilizationPercentage" position="right" className="fill-foreground text-xs" formatter={(v: number) => `${v}%`} />
+                        <LabelList
+                          dataKey="utilizationPercentage"
+                          position="insideRight"
+                          offset={8}
+                          className="fill-primary-foreground text-xs font-medium"
+                          formatter={(v: number) => `${v}%`}
+                        />
                       </Bar>
                     </BarChart>
                   </ChartContainer>
-                  {data.equipmentOccupancy.some((item) => item.isNearFull) && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {data.equipmentOccupancy
-                        .filter((item) => item.isNearFull)
-                        .map((item) => (
-                          <Badge key={item._id} variant="destructive" className="flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            {item.code} quase cheio
-                          </Badge>
-                        ))}
-                    </div>
-                  )}
                 </>
               )}
             </CardContent>
@@ -556,17 +582,32 @@ export default function ReportsPage() {
                   <ChartContainer
                     config={utilizationChartConfig}
                     className="aspect-auto w-full"
-                    style={{ height: Math.max(160, departmentChartData.length * 40) }}
+                    style={{ height: Math.max(140, departmentChartData.length * 44) }}
                   >
-                    <BarChart data={departmentChartData} layout="vertical" margin={{ left: 8 }}>
+                    <BarChart data={departmentChartData} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 4 }} barCategoryGap={10}>
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" />
                       <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
-                      <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={130} tick={{ fontSize: 12 }} />
-                      <ChartTooltip content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
-                      <Bar dataKey="utilizationPercentage" radius={4}>
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        tickLine={false}
+                        axisLine={false}
+                        width={130}
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value: string) => truncateLabel(value, 18)}
+                      />
+                      <ChartTooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
+                      <Bar dataKey="utilizationPercentage" radius={[0, 6, 6, 0]} maxBarSize={28}>
                         {departmentChartData.map((item, index) => (
                           <Cell key={index} fill={utilizationFill(item.utilizationPercentage)} />
                         ))}
-                        <LabelList dataKey="utilizationPercentage" position="right" className="fill-foreground text-xs" formatter={(v: number) => `${v}%`} />
+                        <LabelList
+                          dataKey="utilizationPercentage"
+                          position="insideRight"
+                          offset={8}
+                          className="fill-primary-foreground text-xs font-medium"
+                          formatter={(v: number) => `${v}%`}
+                        />
                       </Bar>
                     </BarChart>
                   </ChartContainer>
