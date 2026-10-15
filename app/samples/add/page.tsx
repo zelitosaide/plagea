@@ -187,7 +187,7 @@ export default function AddSamplePage() {
         }
 
         alert("Amostra adicionada com sucesso!");
-        router.push("/");
+        router.push(`/samples/${result._id}`);
       } else {
         alert(result.error || "Falha ao adicionar a amostra");
       }

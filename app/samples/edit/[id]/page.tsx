@@ -436,7 +436,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
       }
 
       alert("Sample updated successfully!");
-      router.push("/samples");
+      router.push(`/samples/${id}`);
     } catch (error) {
       console.error("Error updating sample:", error);
       alert("Failed to update sample");
