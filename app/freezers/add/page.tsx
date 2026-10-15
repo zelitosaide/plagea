@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,10 +12,19 @@ import { Save, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { EQUIPMENT_TYPE_LIST, getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
+import { useAuth } from "@/hooks/use-auth"
+
+type Department = {
+  _id: string
+  name: string
+}
 
 export default function AddFreezerPage() {
   const router = useRouter()
+  const { user } = useAuth()
+  const isSuperAdmin = user?.role === "superadmin"
   const [loading, setLoading] = useState(false)
+  const [departments, setDepartments] = useState<Department[]>([])
   const [formData, setFormData] = useState({
     type: "freezer" as EquipmentType,
     name: "",
@@ -23,9 +32,18 @@ export default function AddFreezerPage() {
     temperature: "",
     capacity: "",
     notes: "",
+    departmentId: "",
   })
 
   const typeConfig = getEquipmentTypeConfig(formData.type)
+
+  useEffect(() => {
+    if (!isSuperAdmin) return
+    fetch("/api/departments")
+      .then((response) => (response.ok ? response.json() : []))
+      .then(setDepartments)
+      .catch(() => setDepartments([]))
+  }, [isSuperAdmin])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,6 +55,9 @@ export default function AddFreezerPage() {
     }
     if (typeConfig.hasTemperature) {
       requiredFields.temperature = formData.temperature
+    }
+    if (isSuperAdmin) {
+      requiredFields.departmentId = formData.departmentId
     }
 
     for (const [, value] of Object.entries(requiredFields)) {
@@ -131,6 +152,27 @@ export default function AddFreezerPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {isSuperAdmin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="departmentId">Departamento *</Label>
+                    <Select
+                      value={formData.departmentId}
+                      onValueChange={(value) => handleInputChange("departmentId", value)}
+                    >
+                      <SelectTrigger id="departmentId">
+                        <SelectValue placeholder="Selecione o departamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept._id} value={dept._id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome *</Label>
