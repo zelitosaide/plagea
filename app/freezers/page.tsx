@@ -1,14 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { Thermometer, MapPin, Package, Settings, ChevronLeft, ChevronRight } from "lucide-react"
+import { Thermometer, Archive, MapPin, Package, Settings, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { EQUIPMENT_TYPE_LIST, getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
 
 type Freezer = {
   _id: string
@@ -18,6 +19,7 @@ type Freezer = {
   capacity: number
   currentSamples: number
   code: string
+  type: EquipmentType
   status: "operational" | "maintenance" | "offline"
   lastMaintenance: string
 }
@@ -25,22 +27,33 @@ type Freezer = {
 export default function FreezersPage() {
   const [freezers, setFreezers] = useState<Freezer[]>([])
   const [currentPage, setCurrentPage] = useState(1)
+  const [typeFilter, setTypeFilter] = useState<EquipmentType | "all">("all")
   const itemsPerPage = 6
   const router = useRouter()
 
+  const filteredFreezers = useMemo(
+    () => (typeFilter === "all" ? freezers : freezers.filter((f) => f.type === typeFilter)),
+    [freezers, typeFilter]
+  )
+
   // Calculate total pages
-  const totalPages = Math.ceil(freezers.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredFreezers.length / itemsPerPage)
 
   // Get current freezers for the page
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentFreezers = freezers.slice(indexOfFirstItem, indexOfLastItem)
+  const currentFreezers = filteredFreezers.slice(indexOfFirstItem, indexOfLastItem)
 
   // Change page function
   const changePage = (pageNumber: number) => {
     setCurrentPage(pageNumber)
     // Scroll to top when changing pages
     window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const handleTypeFilterChange = (type: EquipmentType | "all") => {
+    setTypeFilter(type)
+    setCurrentPage(1)
   }
 
   const getStatusColor = (status: string) => {
@@ -80,15 +93,15 @@ export default function FreezersPage() {
 
   const fetchFreezers = async () => {
     try {
-      const response = await fetch("/api/equipment?type=freezer")
+      const response = await fetch("/api/equipment")
       if (response.ok) {
         const data = await response.json()
         setFreezers(data)
         console.log(data);
       }
     } catch (error) {
-      alert("Falha ao buscar congeladores")
-      console.log("Error fetching freezers:", error)
+      alert("Falha ao buscar equipamento")
+      console.log("Error fetching equipment:", error)
     } finally {
       // setLoading(false)
     }
@@ -107,11 +120,11 @@ export default function FreezersPage() {
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Gestão de Congeladores</h1>
-          <p className="text-sm text-muted-foreground mt-1">Monitorar e gerenciar unidades de congeladores de laboratório</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Gestão de Equipamentos</h1>
+          <p className="text-sm text-muted-foreground mt-1">Monitorar e gerenciar congeladores, arquivos de blocos e arquivos de lâminas</p>
         </div>
         <Link href="/freezers/add">
-          <Button>Adicionar Novo Congelador</Button>
+          <Button>Adicionar Novo Equipamento</Button>
         </Link>
       </div>
 
@@ -144,21 +157,47 @@ export default function FreezersPage() {
         </CardContent>
       </Card>
 
-      {/* Freezer Grid */}
+      {/* Equipment Grid */}
       <div>
-        <h2 className="text-sm font-semibold text-foreground mb-3">
-          Congeladores <span className="font-normal text-muted-foreground">({freezers.length})</span>
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-foreground">
+            Equipamentos <span className="font-normal text-muted-foreground">({filteredFreezers.length})</span>
+          </h2>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={typeFilter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleTypeFilterChange("all")}
+            >
+              Todos
+            </Button>
+            {EQUIPMENT_TYPE_LIST.map((config) => (
+              <Button
+                key={config.type}
+                variant={typeFilter === config.type ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleTypeFilterChange(config.type)}
+              >
+                {config.label}
+              </Button>
+            ))}
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentFreezers.map((freezer) => {
             const utilizationPercentage = Math.round((freezer.currentSamples / freezer.capacity) * 100)
+            const typeConfig = getEquipmentTypeConfig(freezer.type)
 
             return (
               <Card key={freezer._id} className="relative">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl flex items-center gap-2">
-                      <Thermometer className="h-5 w-5" />
+                      {typeConfig.hasTemperature ? (
+                        <Thermometer className="h-5 w-5" />
+                      ) : (
+                        <Archive className="h-5 w-5" />
+                      )}
                       {freezer.name}
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -171,14 +210,17 @@ export default function FreezersPage() {
                   <CardDescription className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
                     {freezer.location}
+                    <span className="text-muted-foreground">· {typeConfig.label}</span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Temperature */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Temperatura</span>
-                    <span className="text-lg font-bold text-primary">{freezer.temperature}</span>
-                  </div>
+                  {typeConfig.hasTemperature && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Temperatura</span>
+                      <span className="text-lg font-bold text-primary">{freezer.temperature}</span>
+                    </div>
+                  )}
 
                   {/* Capacity */}
                   <div className="space-y-2">

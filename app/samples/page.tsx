@@ -428,7 +428,7 @@ export default function SamplesPage() {
                             <div>
                               <p>
                                 <span className="font-medium">
-                                  Hora Congelador:
+                                  Hora de Armazenamento:
                                 </span>{" "}
                                 {sample.freezerStorageTime || "N/A"}
                               </p>

@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge"
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Amostras", href: "/samples", icon: TestTube },
-  { name: "Congeladores", href: "/freezers", icon: Thermometer },
+  { name: "Equipamentos", href: "/freezers", icon: Thermometer },
 ]
 
 export function AppSidebar() {

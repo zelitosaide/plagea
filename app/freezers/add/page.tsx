@@ -11,11 +11,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Save, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { EQUIPMENT_TYPE_LIST, getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
 
 export default function AddFreezerPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
+    type: "freezer" as EquipmentType,
     name: "",
     location: "",
     temperature: "",
@@ -23,17 +25,23 @@ export default function AddFreezerPage() {
     notes: "",
   })
 
+  const typeConfig = getEquipmentTypeConfig(formData.type)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const requiredFields = { ...formData }
-  
-    for (const [key, value] of Object.entries(requiredFields)) {
-      if (key === "notes") continue // Skip optional field
-      
+    const requiredFields: Record<string, string> = {
+      name: formData.name,
+      location: formData.location,
+      capacity: formData.capacity,
+    }
+    if (typeConfig.hasTemperature) {
+      requiredFields.temperature = formData.temperature
+    }
+
+    for (const [, value] of Object.entries(requiredFields)) {
       if (!value) {
         alert(`Por favor, preencha todos campos obrigatórios`)
-        // alert(`Por favor, preencha o campo obrigatório: ${key}`)
         return
       }
     }
@@ -48,7 +56,7 @@ export default function AddFreezerPage() {
         },
         body: JSON.stringify({
           ...formData,
-          type: "freezer",
+          temperature: typeConfig.hasTemperature ? formData.temperature : "",
           capacity: Number.parseInt(formData.capacity),
           alertsEnabled: false,
           temperatureAlerts: false,
@@ -62,21 +70,29 @@ export default function AddFreezerPage() {
       const result = await response.json()
 
       if (response.ok) {
-        alert("Freezer added successfully!")
+        alert("Equipamento adicionado com sucesso!")
         router.push("/freezers")
       } else {
-        alert(result.error || "Failed to add freezer")
+        alert(result.error || "Falha ao adicionar equipamento")
       }
     } catch (error) {
-      console.error("Error adding freezer:", error)
-      alert("Failed to add freezer")
+      console.error("Error adding equipment:", error)
+      alert("Falha ao adicionar equipamento")
     } finally {
       setLoading(false)
     }
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    if (field === "type") {
+      setFormData((prev) => ({
+        ...prev,
+        type: value as EquipmentType,
+        temperature: value === "freezer" ? prev.temperature : "",
+      }))
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
   }
 
   return (
@@ -85,28 +101,44 @@ export default function AddFreezerPage() {
         <Link href="/freezers">
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Congeladores
+            Voltar para Equipamentos
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Adicionar Novo Congelador</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Adicionar Novo Equipamento</h1>
       </div>
 
       <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Freezer Information */}
+            {/* Equipment Information */}
             <Card>
               <CardHeader>
-                <CardTitle>Informações do Congelador</CardTitle>
-                <CardDescription>Detalhes sobre a unidade do congelador</CardDescription>
+                <CardTitle>Informações do Equipamento</CardTitle>
+                <CardDescription>Detalhes sobre a unidade de armazenamento</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome do Congelador *</Label>
+                  <Label htmlFor="type">Tipo de Equipamento *</Label>
+                  <Select value={formData.type} onValueChange={(value) => handleInputChange("type", value)}>
+                    <SelectTrigger id="type">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EQUIPMENT_TYPE_LIST.map((config) => (
+                        <SelectItem key={config.type} value={config.type}>
+                          {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Congelador Principal do Laboratório"
+                    placeholder={`${typeConfig.label} Principal do Laboratório`}
                     // required
                   />
                 </div>
@@ -122,23 +154,25 @@ export default function AddFreezerPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="temperature">Temperatura *</Label>
-                  <Select
-                    value={formData.temperature}
-                    onValueChange={(value) => handleInputChange("temperature", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a temperatura" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="-20°C">-20°C</SelectItem>
-                      <SelectItem value="-80°C">-80°C</SelectItem>
-                      <SelectItem value="-150°C">-150°C</SelectItem>
-                      <SelectItem value="-196°C">-196°C (Nitrogênio Líquido)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {typeConfig.hasTemperature && (
+                  <div className="space-y-2">
+                    <Label htmlFor="temperature">Temperatura *</Label>
+                    <Select
+                      value={formData.temperature}
+                      onValueChange={(value) => handleInputChange("temperature", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a temperatura" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="-20°C">-20°C</SelectItem>
+                        <SelectItem value="-80°C">-80°C</SelectItem>
+                        <SelectItem value="-150°C">-150°C</SelectItem>
+                        <SelectItem value="-196°C">-196°C (Nitrogênio Líquido)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="capacity">Capacidade (número de amostras) *</Label>
@@ -168,26 +202,31 @@ export default function AddFreezerPage() {
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => handleInputChange("notes", e.target.value)}
-                    placeholder="Notas adicionais sobre o freezer..."
+                    placeholder="Notas adicionais sobre o equipamento..."
                     rows={6}
                   />
                 </div>
 
                 <div className="rounded-lg border bg-card text-card-foreground shadow-xs p-4">
-                  <h4 className="font-medium mb-2">Visualização do Congelador</h4>
+                  <h4 className="font-medium mb-2">Visualização do Equipamento</h4>
                   <div className="space-y-1 text-sm text-muted-foreground">
+                    <p>
+                      <span className="font-medium">Tipo:</span> {typeConfig.label}
+                    </p>
                     <p>
                       <span className="font-medium">Nome:</span> {formData.name || "Não especificado"}
                     </p>
                     <p>
                       <span className="font-medium">Localização:</span> {formData.location || "Não especificado"}
                     </p>
-                    <p>
-                      <span className="font-medium">Temperatura:</span> {formData.temperature || "Não especificado"}
-                    </p>
+                    {typeConfig.hasTemperature && (
+                      <p>
+                        <span className="font-medium">Temperatura:</span> {formData.temperature || "Não especificado"}
+                      </p>
+                    )}
                     <p>
                       <span className="font-medium">Capacidade:</span>{" "}
-                      {formData.capacity ? `${formData.capacity} samples` : "Não especificado"}
+                      {formData.capacity ? `${formData.capacity} amostras` : "Não especificado"}
                     </p>
                   </div>
                 </div>
@@ -210,7 +249,7 @@ export default function AddFreezerPage() {
               ) : (
                 <>
                   <Save className="h-4 w-4" />
-                  Salvar Congelador
+                  Salvar Equipamento
                 </>
               )}
             </Button>

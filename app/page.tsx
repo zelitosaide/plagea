@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils"
 
 type Stats = {
   totalSamples: number
-  totalFreezers: number
+  totalEquipment: number
   expiringSoon: number
   availablePositions: number
 }
@@ -95,13 +95,13 @@ export default function Dashboard() {
     {
       label: "Total de Amostras",
       value: stats.totalSamples.toLocaleString(),
-      helper: "Em todos os congeladores",
+      helper: "Em todo o equipamento",
       icon: Package,
       tone: "primary" as const,
     },
     {
-      label: "Total de Congeladores",
-      value: stats.totalFreezers.toLocaleString(),
+      label: "Total de Equipamentos",
+      value: stats.totalEquipment.toLocaleString(),
       helper: "Todos operacionais",
       icon: Thermometer,
       tone: "primary" as const,
@@ -148,7 +148,7 @@ export default function Dashboard() {
         <Link href="/freezers">
           <Button variant="outline" className="w-full h-11 gap-2">
             <Thermometer className="h-4 w-4" />
-            Gerir Congeladores
+            Gerir Equipamentos
           </Button>
         </Link>
       </div>

@@ -1,34 +1,38 @@
 import { NextRequest, NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
+import { getDepartmentFilter, requireSession } from "@/lib/auth"
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
+  const auth = await requireSession(request)
+  if (!auth.ok) return auth.response
+
   try {
-    const { db } = await connectToDatabase()
+    const departmentFilter = getDepartmentFilter(auth.session)
 
-    const totalSamples = await db.collection("samples").countDocuments()
-    const totalFreezers = await db.collection("freezers").countDocuments()
+    const totalSamples = await auth.db.collection("samples").countDocuments(departmentFilter)
+    const totalEquipment = await auth.db.collection("equipment").countDocuments(departmentFilter)
 
     const now = new Date()
     const in7Days = new Date()
     in7Days.setDate(now.getDate() + 7)
 
-    const expiringSoon = await db.collection("samples").countDocuments({
+    const expiringSoon = await auth.db.collection("samples").countDocuments({
+      ...departmentFilter,
       expiryDate: {
         $gte: now.toISOString().split("T")[0],
         $lte: in7Days.toISOString().split("T")[0],
       },
     })
 
-    const freezers = await db.collection("freezers").find().toArray()
-    const availablePositions = freezers.reduce((acc, freezer) => {
-      const cap = freezer.capacity ?? 0
-      const current = freezer.currentSamples ?? 0
+    const equipment = await auth.db.collection("equipment").find(departmentFilter).toArray()
+    const availablePositions = equipment.reduce((acc, item) => {
+      const cap = item.capacity ?? 0
+      const current = item.currentSamples ?? 0
       return acc + Math.max(cap - current, 0)
     }, 0)
 
     const stats = {
       totalSamples,
-      totalFreezers,
+      totalEquipment,
       expiringSoon,
       availablePositions,
     }

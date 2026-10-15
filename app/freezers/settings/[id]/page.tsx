@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
 
 export default function FreezerSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -30,6 +31,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
   const [loading, setLoading] = useState(false)
   const [freezerLoading, setFreezerLoading] = useState(true)
   const [formData, setFormData] = useState({
+    type: "freezer" as EquipmentType,
     name: "",
     location: "",
     temperature: "",
@@ -42,6 +44,8 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
     maintenanceAlerts: false,
     capacityThreshold: 90,
   })
+
+  const typeConfig = getEquipmentTypeConfig(formData.type)
 
   const [lastMaintenance, setLastMaintenance] = useState("")
   const [nextMaintenance, setNextMaintenance] = useState("")
@@ -58,8 +62,8 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
         setNextMaintenance(data.nextMaintenance)
       }
     } catch (error) {
-      alert("Falha ao buscar congelador")
-      console.log("Error fetching freezer:", error)
+      alert("Falha ao buscar equipamento")
+      console.log("Error fetching equipment:", error)
     } finally {
       setFreezerLoading(false)
     }
@@ -85,11 +89,11 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
           capacity: Number.parseInt(formData.capacity || "0"),
         }),
       })
-      alert("Freezer updated successfully!")
+      alert("Equipamento atualizado com sucesso!")
       router.push("/freezers")
     } catch (error) {
-      console.error("Falha ao atualizar as configurações do freezer:", error)
-      alert("Falha ao atualizar as configurações do freezer")
+      console.error("Falha ao atualizar as configurações do equipamento:", error)
+      alert("Falha ao atualizar as configurações do equipamento")
     } finally {
       setLoading(false)
     }
@@ -133,15 +137,15 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
         });
 
         if (response.ok) {
-          alert("Freezer deleted successfully");
+          alert("Equipamento apagado com sucesso");
           router.push("/freezers"); // Navigate only after successful deletion
         } else {
           const errorData = await response.json();
-          alert(`Failed to delete freezer: ${errorData.error || "Unknown error"}`);
+          alert(`Falha ao apagar equipamento: ${errorData.error || "Unknown error"}`);
         }
       } catch (error) {
-        console.error("Error deleting freezer:", error)
-        alert("Failed to delete freezer")
+        console.error("Error deleting equipment:", error)
+        alert("Falha ao apagar equipamento")
       } finally {
         setLoading(false)
       }
@@ -153,11 +157,11 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
         <Link href="/freezers">
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Congeladores
+            Voltar para Equipamentos
           </Button>
         </Link>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          Configurações do Congelador - {formData.name}
+          Configurações do Equipamento - {formData.name}
         </h1>
       </div>
 
@@ -170,16 +174,16 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                   <Thermometer className="h-5 w-5" />
                   Informações Básicas
                 </CardTitle>
-                <CardDescription>Atualizar a identificação e os detalhes de localização do freezer</CardDescription>
+                <CardDescription>Atualizar a identificação e os detalhes de localização do equipamento</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome do Congelador *</Label>
+                  <Label htmlFor="name">Nome *</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Congelador Principal do Laboratório"
+                    placeholder={`${typeConfig.label} Principal do Laboratório`}
                     required
                   />
                 </div>
@@ -195,23 +199,25 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="temperature">Temperatura *</Label>
-                  <Select
-                    value={formData.temperature}
-                    onValueChange={(value) => handleInputChange("temperature", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar temperatura" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="-20°C">-20°C</SelectItem>
-                      <SelectItem value="-80°C">-80°C</SelectItem>
-                      <SelectItem value="-150°C">-150°C</SelectItem>
-                      <SelectItem value="-196°C">-196°C (Nitrogênio Líquido)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {typeConfig.hasTemperature && (
+                  <div className="space-y-2">
+                    <Label htmlFor="temperature">Temperatura *</Label>
+                    <Select
+                      value={formData.temperature}
+                      onValueChange={(value) => handleInputChange("temperature", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecionar temperatura" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="-20°C">-20°C</SelectItem>
+                        <SelectItem value="-80°C">-80°C</SelectItem>
+                        <SelectItem value="-150°C">-150°C</SelectItem>
+                        <SelectItem value="-196°C">-196°C (Nitrogênio Líquido)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="capacity">Capacidade (amostras) *</Label>
@@ -263,19 +269,22 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                   />
                 </div>
 
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Alertas de Temperatura</Label>
-                    <p className="text-sm text-muted-foreground">Alertar quando a temperatura estiver abaixo do limite</p>
-                  </div>
-                  <Switch
-                    checked={formData.temperatureAlerts}
-                    onCheckedChange={(checked) => handleInputChange("temperatureAlerts", checked)}
-                    disabled={!formData.alertsEnabled}
-                  />
-                </div>
+                {typeConfig.hasTemperature && (
+                  <>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Alertas de Temperatura</Label>
+                        <p className="text-sm text-muted-foreground">Alertar quando a temperatura estiver abaixo do limite</p>
+                      </div>
+                      <Switch
+                        checked={formData.temperatureAlerts}
+                        onCheckedChange={(checked) => handleInputChange("temperatureAlerts", checked)}
+                        disabled={!formData.alertsEnabled}
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -302,7 +311,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                     min="50"
                     max="100"
                   />
-                  <p className="text-xs text-muted-foreground">Alertar quando o congelador atingir este percentual de capacidade</p>
+                  <p className="text-xs text-muted-foreground">Alertar quando o equipamento atingir este percentual de capacidade</p>
                 </div>
 
                 {utilizationPercentage >= formData.capacityThreshold && (
@@ -352,7 +361,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => handleInputChange("notes", e.target.value)}
-                    placeholder="Notas adicionais sobre este freezer..."
+                    placeholder="Notas adicionais sobre este equipamento..."
                     rows={4}
                   />
                 </div>
@@ -393,7 +402,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
             {/* <Button variant="destructive" onClick={handleDelete} disabled={loading} className="flex items-center gap-2"> */}
             <Button variant="destructive" onClick={handleDelete} disabled={!isAdmin} className="flex items-center gap-2">
               <Trash2 className="h-4 w-4" />
-              Apagar Congelador
+              Apagar Equipamento
             </Button>
 
             <div className="flex gap-4">
