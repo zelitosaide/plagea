@@ -118,17 +118,39 @@ export default function AddFreezerPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/freezers">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Equipamentos
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <Link href="/freezers">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar para Equipamentos
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Adicionar Novo Equipamento</h1>
+        </div>
+        <div className="flex gap-4">
+          <Link href="/freezers">
+            <Button variant="outline" disabled={loading}>
+              Cancelar
+            </Button>
+          </Link>
+          <Button type="submit" form="equipment-add-form" className="flex items-center gap-2" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Salvar Equipamento
+              </>
+            )}
           </Button>
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Adicionar Novo Equipamento</h1>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form id="equipment-add-form" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Equipment Information */}
             <Card>

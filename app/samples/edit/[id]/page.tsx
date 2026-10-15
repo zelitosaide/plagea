@@ -610,17 +610,44 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/samples">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Amostras
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <Link href="/samples">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar para Amostras
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Editar Amostra</h1>
+        </div>
+        <div className="flex gap-4">
+          <Link href="/samples">
+            <Button variant="outline" disabled={loading}>
+              Cancelar
+            </Button>
+          </Link>
+          <Button
+            type="submit"
+            form="sample-edit-form"
+            className="flex items-center gap-2"
+            disabled={loading || sampleLoading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Atualizando...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Atualizar Amostra
+              </>
+            )}
           </Button>
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Editar Amostra</h1>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form id="sample-edit-form" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sample Information */}
             <Card>
