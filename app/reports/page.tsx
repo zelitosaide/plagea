@@ -474,7 +474,7 @@ export default function ReportsPage() {
                     className="aspect-auto w-full"
                     style={{ height: Math.max(140, occupancyChartData.length * 44) }}
                   >
-                    <BarChart data={occupancyChartData} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 4 }} barCategoryGap={10}>
+                    <BarChart data={occupancyChartData} layout="vertical" margin={{ top: 4, right: 36, bottom: 4, left: 4 }} barCategoryGap={10}>
                       <CartesianGrid horizontal={false} strokeDasharray="3 3" />
                       <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
                       <YAxis
@@ -494,9 +494,9 @@ export default function ReportsPage() {
                         ))}
                         <LabelList
                           dataKey="utilizationPercentage"
-                          position="insideRight"
+                          position="right"
                           offset={8}
-                          className="fill-primary-foreground text-xs font-medium"
+                          className="fill-foreground text-xs font-medium"
                           formatter={(v: number) => `${v}%`}
                         />
                       </Bar>
@@ -594,7 +594,7 @@ export default function ReportsPage() {
                     className="aspect-auto w-full"
                     style={{ height: Math.max(140, departmentChartData.length * 44) }}
                   >
-                    <BarChart data={departmentChartData} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 4 }} barCategoryGap={10}>
+                    <BarChart data={departmentChartData} layout="vertical" margin={{ top: 4, right: 36, bottom: 4, left: 4 }} barCategoryGap={10}>
                       <CartesianGrid horizontal={false} strokeDasharray="3 3" />
                       <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
                       <YAxis
@@ -614,9 +614,9 @@ export default function ReportsPage() {
                         ))}
                         <LabelList
                           dataKey="utilizationPercentage"
-                          position="insideRight"
+                          position="right"
                           offset={8}
-                          className="fill-primary-foreground text-xs font-medium"
+                          className="fill-foreground text-xs font-medium"
                           formatter={(v: number) => `${v}%`}
                         />
                       </Bar>
