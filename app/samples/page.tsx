@@ -413,9 +413,12 @@ export default function SamplesPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold text-lg">
+                            <Link
+                              href={`/samples/${sample._id}`}
+                              className="font-semibold text-lg hover:text-primary hover:underline"
+                            >
                               {sample.patientCode}
-                            </span>
+                            </Link>
                             <Badge variant="secondary">
                               {sample.sampleType}
                             </Badge>
@@ -479,39 +482,11 @@ export default function SamplesPage() {
                           )}
                         </div>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              alert(
-                                `Detalhes da Amostra:
-                                
-Código do Paciente: ${sample.patientCode}
-Tipo de Amostra: ${sample.sampleType}
-Quantidade da Amostra: ${
-                                  sample.sampleQuantity
-                                    ? sample.sampleQuantity + " mL"
-                                    : "Não informado"
-                                }
-Projecto: ${sample.project}
-
-LOCALIZAÇÃO:
-Equipamento: ${sample.equipmentCode}
-Localização Completa: ${[sample.equipmentCode, ...(sample.path || []), sample.position].join("-")}
-
-DATAS E HORÁRIOS:
-Data de Entrada: ${sample.entryDate}
-Hora de Entrada no Laboratório: ${sample.labEntryTime || "Não informado"}
-Hora de Armazenamento: ${sample.freezerStorageTime || "Não informado"}
-Data de Validade: ${sample.expiryDate}
-
-OBSERVAÇÕES:
-${sample.notes || "Nenhuma observação registrada"}`
-                              )
-                            }
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <Link href={`/samples/${sample._id}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Link href={`/samples/edit/${sample._id}`}>
                             <Button variant="outline" size="sm">
                               <Edit className="h-4 w-4" />
