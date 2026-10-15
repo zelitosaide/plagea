@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   BarChart3,
+  BookOpen,
   Building2,
   FlaskConical,
   Home,
@@ -31,6 +32,7 @@ const navigation = [
   { name: "Amostras", href: "/samples", icon: TestTube },
   { name: "Equipamentos", href: "/freezers", icon: Warehouse },
   { name: "Relatórios", href: "/reports", icon: BarChart3 },
+  { name: "Guia do Utilizador", href: "/guide", icon: BookOpen },
 ]
 
 export function AppSidebar() {

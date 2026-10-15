@@ -339,17 +339,24 @@ export default function ReportsPage() {
               {timeChartData.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem amostras neste período.</p>
               ) : (
-                <ChartContainer config={countChartConfig} className="aspect-auto h-64 w-full">
-                  <BarChart data={timeChartData} margin={{ top: 24, right: 8, left: -16 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} />
-                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
-                    <ChartTooltip content={<ChartTooltipContent hideLabel={false} />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} />
-                    <Bar dataKey="count" fill="var(--color-count)" radius={[6, 6, 0, 0]} maxBarSize={48}>
-                      <LabelList dataKey="count" position="top" offset={8} className="fill-foreground text-xs font-medium" />
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
+                // Com um intervalo de datas longo, muitos meses espremidos na
+                // largura do cartão sobrepunham-se; cada mês passa a ter uma
+                // largura mínima garantida, com scroll horizontal se não couber.
+                <div className="overflow-x-auto print:overflow-visible">
+                  <div style={{ minWidth: Math.max(100, timeChartData.length * 64) }}>
+                    <ChartContainer config={countChartConfig} className="aspect-auto h-64 w-full">
+                      <BarChart data={timeChartData} margin={{ top: 24, right: 8, left: -16 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} interval={0} />
+                        <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} />
+                        <ChartTooltip content={<ChartTooltipContent hideLabel={false} />} cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} />
+                        <Bar dataKey="count" fill="var(--color-count)" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                          <LabelList dataKey="count" position="top" offset={8} className="fill-foreground text-xs font-medium" />
+                        </Bar>
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -378,9 +385,10 @@ export default function ReportsPage() {
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={120}
+                        width={128}
+                        interval={0}
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value: string) => truncateLabel(value)}
+                        tickFormatter={(value: string) => truncateLabel(value, 15)}
                       />
                       <ChartTooltip
                         cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
@@ -419,9 +427,10 @@ export default function ReportsPage() {
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={120}
+                        width={128}
+                        interval={0}
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value: string) => truncateLabel(value)}
+                        tickFormatter={(value: string) => truncateLabel(value, 15)}
                       />
                       <ChartTooltip
                         cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
@@ -473,9 +482,10 @@ export default function ReportsPage() {
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={150}
+                        width={160}
+                        interval={0}
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value: string) => truncateLabel(value, 22)}
+                        tickFormatter={(value: string) => truncateLabel(value, 18)}
                       />
                       <ChartTooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
                       <Bar dataKey="utilizationPercentage" radius={[0, 6, 6, 0]} maxBarSize={22}>
@@ -593,8 +603,9 @@ export default function ReportsPage() {
                         tickLine={false}
                         axisLine={false}
                         width={130}
+                        interval={0}
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value: string) => truncateLabel(value, 18)}
+                        tickFormatter={(value: string) => truncateLabel(value, 14)}
                       />
                       <ChartTooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
                       <Bar dataKey="utilizationPercentage" radius={[0, 6, 6, 0]} maxBarSize={28}>
