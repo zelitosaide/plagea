@@ -41,13 +41,14 @@ export default function AddFreezerPage() {
     setLoading(true)
 
     try {
-      const response = await fetch("/api/freezers", {
+      const response = await fetch("/api/equipment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
+          type: "freezer",
           capacity: Number.parseInt(formData.capacity),
           alertsEnabled: false,
           temperatureAlerts: false,

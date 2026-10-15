@@ -1,17 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
+import { getDepartmentFilter, requireSession } from "@/lib/auth"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
+  const { id } = await params
+  const auth = await requireSession(request)
+  if (!auth.ok) return auth.response
 
+  try {
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID de amostra inválido" }, { status: 400 })
     }
 
-    const { db } = await connectToDatabase()
-    const sample = await db.collection("samples").findOne({ _id: new ObjectId(id) })
+    const sample = await auth.db
+      .collection("samples")
+      .findOne({ _id: new ObjectId(id), ...getDepartmentFilter(auth.session) })
 
     if (!sample) {
       return NextResponse.json({ error: "Amostra não encontrada" }, { status: 404 })
@@ -25,30 +28,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params
+  const { id } = await params
+  const auth = await requireSession(request)
+  if (!auth.ok) return auth.response
 
+  try {
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid sample ID" }, { status: 400 })
     }
 
-    const { db } = await connectToDatabase()
+    const departmentFilter = getDepartmentFilter(auth.session)
 
-    // Find the sample to get the freezerId before deleting
-    const sample = await db.collection("samples").findOne({ _id: new ObjectId(id) })
+    // Find the sample to get the equipmentId before deleting
+    const sample = await auth.db.collection("samples").findOne({ _id: new ObjectId(id), ...departmentFilter })
     if (!sample) {
       return NextResponse.json({ error: "Sample not found" }, { status: 404 })
     }
 
-    const result = await db.collection("samples").deleteOne({ _id: new ObjectId(id) })
+    const result = await auth.db.collection("samples").deleteOne({ _id: new ObjectId(id) })
     if (result.deletedCount === 0) {
       return NextResponse.json({ error: "Sample not found" }, { status: 404 })
     }
 
-    // Decrease the freezer's currentSamples count
-    if (sample.freezerId && ObjectId.isValid(sample.freezerId)) {
-      await db.collection("freezers").updateOne(
-        { _id: new ObjectId(sample.freezerId) },
+    // Decrease the equipment's currentSamples count
+    if (sample.equipmentId && ObjectId.isValid(sample.equipmentId)) {
+      await auth.db.collection("equipment").updateOne(
+        { _id: new ObjectId(sample.equipmentId) },
         { $inc: { currentSamples: -1 } }
       )
     }
@@ -61,24 +66,27 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const auth = await requireSession(request)
+  if (!auth.ok) return auth.response
+
   try {
-    const { id } = await params
     const body = await request.json()
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid sample ID" }, { status: 400 })
     }
 
-    const { db } = await connectToDatabase()
+    const departmentFilter = getDepartmentFilter(auth.session)
 
     // Fetch the current sample
-    const currentSample = await db.collection("samples").findOne({ _id: new ObjectId(id) })
+    const currentSample = await auth.db.collection("samples").findOne({ _id: new ObjectId(id), ...departmentFilter })
     if (!currentSample) {
       return NextResponse.json({ error: "Sample not found" }, { status: 404 })
     }
 
-    const oldFreezerId = currentSample.freezerId?.toString()
-    const newFreezerId = body.freezerId
+    const oldEquipmentId = currentSample.equipmentId?.toString()
+    const newEquipmentId = body.equipmentId
 
     const updateData = {
       ...body,
@@ -86,9 +94,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     delete updateData._id
+    delete updateData.departmentId // não se muda o departamento de uma amostra por aqui
 
     // Update the sample
-    const result = await db.collection("samples").updateOne(
+    const result = await auth.db.collection("samples").updateOne(
       { _id: new ObjectId(id) },
       { $set: updateData }
     )
@@ -97,18 +106,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Sample not found after update" }, { status: 404 })
     }
 
-    // If freezer has changed, update both freezers
-    if (newFreezerId && newFreezerId !== oldFreezerId) {
-      if (ObjectId.isValid(oldFreezerId)) {
-        await db.collection("freezers").updateOne(
-          { _id: new ObjectId(oldFreezerId) },
+    // If equipment has changed, update both
+    if (newEquipmentId && newEquipmentId !== oldEquipmentId) {
+      if (ObjectId.isValid(oldEquipmentId)) {
+        await auth.db.collection("equipment").updateOne(
+          { _id: new ObjectId(oldEquipmentId) },
           { $inc: { currentSamples: -1 } }
         )
       }
 
-      if (ObjectId.isValid(newFreezerId)) {
-        await db.collection("freezers").updateOne(
-          { _id: new ObjectId(newFreezerId) },
+      if (ObjectId.isValid(newEquipmentId)) {
+        await auth.db.collection("equipment").updateOne(
+          { _id: new ObjectId(newEquipmentId) },
           { $inc: { currentSamples: 1 } }
         )
       }

@@ -97,6 +97,25 @@ type AdminSessionSuccess = { ok: true; db: Db; session: SessionPayload };
 type AdminSessionFailure = { ok: false; response: NextResponse };
 
 /**
+ * Para rotas de dados "normais" (equipamento, amostras, configuração de
+ * caixas) que qualquer utilizador autenticado pode usar, mas que precisam
+ * de saber o departamento da sessão para filtrar/validar os dados. A
+ * Proxy já garante que existe uma sessão válida antes de a rota correr;
+ * isto só traduz o cookie de volta para a sessão e a ligação à BD.
+ */
+export async function requireSession(request: NextRequest): Promise<AdminSessionSuccess | AdminSessionFailure> {
+  const token = getSessionTokenFromRequest(request);
+  const session = token ? await verifySessionToken(token) : null;
+
+  if (!session) {
+    return { ok: false, response: NextResponse.json({ error: "Not authenticated" }, { status: 401 }) };
+  }
+
+  const { db } = await connectToDatabase();
+  return { ok: true, db, session };
+}
+
+/**
  * Re-checks role/isActive against the database, since the Proxy only checked
  * the JWT claim. Usado pelas rotas de administração do departamento
  * (utilizadores, equipamento) — aceita "admin" (do próprio departamento)

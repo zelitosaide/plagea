@@ -42,17 +42,14 @@ import { cn } from "@/lib/utils";
 import { PositionPicker } from "@/components/position-picker";
 import { TimePicker } from "@/components/time-picker";
 import { BoxDimensionsEditor } from "@/components/box-dimensions-editor";
+import { EQUIPMENT_TYPES, getEquipmentTypeConfig, toPathKey, type EquipmentType } from "@/lib/equipment-types";
 
-type Freezer = {
+type Equipment = {
   _id: string;
   code: string;
   name: string;
-  location: string;
-  temperature: string;
-  capacity: number;
-  currentSamples: number;
+  type: EquipmentType;
   status: "operational" | "maintenance" | "offline";
-  lastMaintenance: string;
 };
 
 type BoxConfig = {
@@ -63,9 +60,7 @@ type BoxConfig = {
 type ExistingSample = {
   _id: string;
   patientCode: string;
-  shelf: string;
-  rightLeft: string;
-  box: string;
+  path: string[];
   position: string;
 };
 
@@ -82,11 +77,10 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
     customSampleType: "",
     sampleQuantity: "",
     project: "",
-    freezerId: "",
-    freezerCode: "",
-    shelf: "",
-    box: "",
-    rightLeft: "",
+    equipmentId: "",
+    equipmentCode: "",
+    equipmentType: "freezer" as EquipmentType,
+    levelValues: {} as Record<string, string>,
     position: "",
     notes: "",
     entryDate: "",
@@ -98,13 +92,17 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
   const [entryDate, setEntryDate] = useState<Date>(new Date());
   const [expiryDate, setExpiryDate] = useState<Date>();
 
-  const [freezers, setFreezers] = useState<Freezer[]>([]);
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
   const [customSampleTypes, setCustomSampleTypes] = useState<string[]>([]);
-  const [freezerSamples, setFreezerSamples] = useState<ExistingSample[]>([]);
+  const [equipmentSamples, setEquipmentSamples] = useState<ExistingSample[]>([]);
   const [boxConfig, setBoxConfig] = useState<BoxConfig | null>(null);
   const [boxConfigLoading, setBoxConfigLoading] = useState(false);
   const [editingBoxDimensions, setEditingBoxDimensions] = useState(false);
   const [savingBoxDimensions, setSavingBoxDimensions] = useState(false);
+
+  const typeConfig = getEquipmentTypeConfig(formData.equipmentType);
+  const path = typeConfig.levels.map((level) => formData.levelValues[level.key] || "");
+  const pathComplete = path.every(Boolean);
 
   const fetchSampleById = async () => {
     try {
@@ -128,24 +126,38 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
         const isInCustomTypes = customSampleTypes.includes(data.sampleType);
         const isInPredefinedTypes = predefinedTypes.includes(data.sampleType);
 
+        const sampleTypeConfig = getEquipmentTypeConfig(data.equipmentType || "freezer");
+        const levelValues: Record<string, string> = {};
+        sampleTypeConfig.levels.forEach((level, index) => {
+          if (data.path?.[index]) levelValues[level.key] = data.path[index];
+        });
+
+        const baseData = {
+          ...data,
+          equipmentType: data.equipmentType || "freezer",
+          levelValues,
+        };
+
         if (data.sampleType && !isInPredefinedTypes && !isInCustomTypes) {
           // It's a custom type that's not in our current custom types list
           // This can happen if the type was removed from settings but still exists in samples
-          setFormData({
-            ...data,
+          setFormData((prev) => ({
+            ...prev,
+            ...baseData,
             sampleType: "custom",
             customSampleType: data.sampleType,
-          });
+          }));
         } else if (isInCustomTypes) {
           // It's a known custom type
-          setFormData({
-            ...data,
+          setFormData((prev) => ({
+            ...prev,
+            ...baseData,
             sampleType: data.sampleType, // Keep it as the custom type value
             customSampleType: "", // Clear this since it's not "custom" selector
-          });
+          }));
         } else {
           // It's a predefined type
-          setFormData(data);
+          setFormData((prev) => ({ ...prev, ...baseData }));
         }
 
         // Sincroniza os objectos Date usados pelo calendário e pela
@@ -164,17 +176,17 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
     }
   };
 
-  const fetchFreezers = async () => {
+  const fetchEquipment = async () => {
     try {
-      const response = await fetch("/api/freezers");
+      const response = await fetch("/api/equipment");
       if (response.ok) {
         const data = await response.json();
-        setFreezers(data);
+        setEquipmentList(data);
         console.log(data);
       }
     } catch (error) {
-      alert("Falha ao buscar congeladores");
-      console.log("Error fetching freezers:", error);
+      alert("Falha ao buscar equipamento");
+      console.log("Error fetching equipment:", error);
     } finally {
       // setLoading(false)
     }
@@ -229,7 +241,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
     const initializeData = async () => {
       setSampleLoading(true);
       try {
-        await Promise.all([fetchFreezers(), loadCustomSampleTypes()]);
+        await Promise.all([fetchEquipment(), loadCustomSampleTypes()]);
         // Load sample data after custom types are loaded
         await fetchSampleById();
       } finally {
@@ -240,40 +252,38 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
     initializeData();
   }, [id]);
 
-  // Carrega as amostras já guardadas no congelador seleccionado, para
+  // Carrega as amostras já guardadas no equipamento seleccionado, para
   // mostrar quais posições estão ocupadas/livres (excluindo esta própria
   // amostra, que já ocupa uma posição).
   useEffect(() => {
-    if (!formData.freezerId) {
-      setFreezerSamples([]);
+    if (!formData.equipmentId) {
+      setEquipmentSamples([]);
       return;
     }
 
-    fetch(`/api/samples?freezerId=${formData.freezerId}`)
+    fetch(`/api/samples?equipmentId=${formData.equipmentId}`)
       .then((response) => (response.ok ? response.json() : []))
       .then((samples: ExistingSample[]) =>
-        setFreezerSamples(samples.filter((sample) => sample._id !== id))
+        setEquipmentSamples(samples.filter((sample) => sample._id !== id))
       )
-      .catch(() => setFreezerSamples([]));
-  }, [formData.freezerId, id]);
+      .catch(() => setEquipmentSamples([]));
+  }, [formData.equipmentId, id]);
 
   // Carrega as dimensões guardadas para esta caixa específica
-  // (freezerId+shelf+rightLeft+box). Cada caixa é independente: uma
-  // caixa de 9x9 e outra de 10x10 no mesmo congelador são normais.
+  // (equipmentId+path). Cada caixa/linha/gaveta é independente: uma
+  // caixa de 9x9 e outra de 10x10 no mesmo equipamento são normais.
   useEffect(() => {
     setEditingBoxDimensions(false);
 
-    if (!formData.freezerId || !formData.shelf || !formData.rightLeft || !formData.box) {
+    if (!formData.equipmentId || !pathComplete) {
       setBoxConfig(null);
       setBoxConfigLoading(false);
       return;
     }
 
     const params = new URLSearchParams({
-      freezerId: formData.freezerId,
-      shelf: formData.shelf,
-      rightLeft: formData.rightLeft,
-      box: formData.box,
+      equipmentId: formData.equipmentId,
+      path: toPathKey(path),
     });
 
     setBoxConfigLoading(true);
@@ -282,7 +292,8 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
       .then((data) => setBoxConfig(data ? { rows: data.rows, columns: data.columns } : null))
       .catch(() => setBoxConfig(null))
       .finally(() => setBoxConfigLoading(false));
-  }, [formData.freezerId, formData.shelf, formData.rightLeft, formData.box]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.equipmentId, toPathKey(path)]);
 
   const handleSaveBoxDimensions = async (rows: number, columns: number) => {
     setSavingBoxDimensions(true);
@@ -291,10 +302,8 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          freezerId: formData.freezerId,
-          shelf: formData.shelf,
-          rightLeft: formData.rightLeft,
-          box: formData.box,
+          equipmentId: formData.equipmentId,
+          path,
           rows,
           columns,
         }),
@@ -314,21 +323,15 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
     }
   };
 
-  const occupiedInCurrentBox =
-    formData.shelf && formData.rightLeft && formData.box
-      ? freezerSamples
-          .filter(
-            (sample) =>
-              sample.shelf === formData.shelf &&
-              sample.rightLeft === formData.rightLeft &&
-              sample.box === formData.box
-          )
-          .map((sample) => ({
-            position: Number.parseInt(sample.position.replace("P", ""), 10),
-            patientCode: sample.patientCode,
-          }))
-          .filter((slot) => !Number.isNaN(slot.position))
-      : [];
+  const occupiedInCurrentBox = pathComplete
+    ? equipmentSamples
+        .filter((sample) => JSON.stringify(sample.path) === JSON.stringify(path))
+        .map((sample) => ({
+          position: Number.parseInt(sample.position.replace("P", ""), 10),
+          patientCode: sample.patientCode,
+        }))
+        .filter((slot) => !Number.isNaN(slot.position))
+    : [];
 
   const boxRows = boxConfig?.rows || 9;
   const boxColumns = boxConfig?.columns || 9;
@@ -340,6 +343,17 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
   const occupiedSlotMatch = occupiedInCurrentBox.find(
     (slot) => slot.position === selectedPositionNumber
   );
+
+  const locationComplete = !!formData.equipmentId && pathComplete && !!formData.position;
+  const locationPreview = locationComplete
+    ? [formData.equipmentCode, ...path, formData.position].join("-")
+    : null;
+
+  const legendExample = [
+    `${typeConfig.prefix}1`,
+    ...typeConfig.levels.map((level) => (level.kind === "select" ? level.options?.[0] || "" : `${level.prefix}1`)),
+    "P1",
+  ].join("-");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -359,6 +373,11 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
     if (!entryDate || !expiryDate) {
       alert("Please select both entry and expiry dates");
+      return;
+    }
+
+    if (!pathComplete || !formData.equipmentId || !formData.position) {
+      alert("Por favor, preencha todos campos obrigatórios");
       return;
     }
 
@@ -388,8 +407,18 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...formData,
+          patientCode: formData.patientCode,
           sampleType: finalSampleType,
+          sampleQuantity: formData.sampleQuantity,
+          project: formData.project,
+          equipmentId: formData.equipmentId,
+          equipmentCode: formData.equipmentCode,
+          equipmentType: formData.equipmentType,
+          path,
+          position: formData.position,
+          notes: formData.notes,
+          labEntryTime: formData.labEntryTime,
+          freezerStorageTime: formData.freezerStorageTime,
           entryDate: entryDate.toISOString().split("T")[0],
           expiryDate: expiryDate?.toISOString().split("T")[0],
         }),
@@ -417,14 +446,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
   };
 
   const handleInputChange = (field: string, value: string) => {
-    if (field === "freezerId") {
-      const [code, id] = value.split(":");
-      setFormData((prev) => ({
-        ...prev,
-        freezerId: id,
-        freezerCode: code,
-      }));
-    } else if (field === "sampleType") {
+    if (field === "sampleType") {
       setFormData((prev) => ({
         ...prev,
         sampleType: value,
@@ -434,6 +456,26 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
     } else {
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
+  };
+
+  const handleEquipmentChange = (value: string) => {
+    const [code, equipId, type] = value.split(":");
+    setFormData((prev) => ({
+      ...prev,
+      equipmentId: equipId,
+      equipmentCode: code,
+      equipmentType: (type as EquipmentType) || "freezer",
+      levelValues: {},
+      position: "",
+    }));
+  };
+
+  const handleLevelChange = (levelKey: string, prefix: string, kind: "number" | "select", rawValue: string) => {
+    const value = kind === "select" ? rawValue : `${prefix}${rawValue}`;
+    setFormData((prev) => ({
+      ...prev,
+      levelValues: { ...prev.levelValues, [levelKey]: value },
+    }));
   };
 
   const formatDate = (date: Date) => {
@@ -455,7 +497,6 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
     const month = currentDate.getMonth();
 
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 
@@ -780,33 +821,31 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="freezerId">ID do Congelador *</Label>
+                  <Label htmlFor="equipmentId">Equipamento *</Label>
                   <Select
                     value={
-                      formData.freezerId
-                        ? `${formData.freezerCode}:${formData.freezerId}`
+                      formData.equipmentId
+                        ? `${formData.equipmentCode}:${formData.equipmentId}:${formData.equipmentType}`
                         : ""
                     }
-                    onValueChange={(value) =>
-                      handleInputChange("freezerId", value)
-                    }
+                    onValueChange={handleEquipmentChange}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o congelador" />
+                      <SelectValue placeholder="Selecione o equipamento" />
                     </SelectTrigger>
                     <SelectContent>
-                      {freezers.length > 0 ? (
-                        freezers.map((freezer) => (
+                      {equipmentList.length > 0 ? (
+                        equipmentList.map((item) => (
                           <SelectItem
-                            key={freezer._id}
-                            value={`${freezer.code}:${freezer._id}`}
+                            key={item._id}
+                            value={`${item.code}:${item._id}:${item.type}`}
                           >
-                            {freezer.code} - {freezer.name}
+                            {item.code} - {item.name} ({EQUIPMENT_TYPES[item.type]?.label || item.type})
                           </SelectItem>
                         ))
                       ) : (
                         <SelectItem value="na" disabled>
-                          Nenhum congelador disponível
+                          Nenhum equipamento disponível
                         </SelectItem>
                       )}
                     </SelectContent>
@@ -814,51 +853,37 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="shelf">Prateleira *</Label>
-                    <Input
-                      id="shelf"
-                      type="number"
-                      value={formData.shelf.toString().replace("S", "")}
-                      onChange={(e) =>
-                        handleInputChange("shelf", `S${e.target.value}`)
-                      }
-                      placeholder="Prateleira"
-                      min="1"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="rightLeft">Lado *</Label>
-                    <Select
-                      value={formData.rightLeft}
-                      onValueChange={(value) =>
-                        handleInputChange("rightLeft", value)
-                      }
-                    >
-                      <SelectTrigger id="rightLeft">
-                        <SelectValue placeholder="D ou E" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="D">D</SelectItem>
-                        <SelectItem value="E">E</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="box">Box *</Label>
-                    <Input
-                      id="box"
-                      type="number"
-                      value={formData.box.toString().replace("B", "")}
-                      onChange={(e) =>
-                        handleInputChange("box", `B${e.target.value}`)
-                      }
-                      placeholder="Box"
-                      min="1"
-                    />
-                  </div>
+                  {typeConfig.levels.map((level) => (
+                    <div key={level.key} className="space-y-2">
+                      <Label htmlFor={level.key}>{level.label} *</Label>
+                      {level.kind === "select" ? (
+                        <Select
+                          value={formData.levelValues[level.key] || ""}
+                          onValueChange={(value) => handleLevelChange(level.key, level.prefix, "select", value)}
+                        >
+                          <SelectTrigger id={level.key}>
+                            <SelectValue placeholder={level.options?.join(" ou ")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {level.options?.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          id={level.key}
+                          type="number"
+                          value={(formData.levelValues[level.key] || "").replace(level.prefix, "")}
+                          onChange={(e) => handleLevelChange(level.key, level.prefix, "number", e.target.value)}
+                          placeholder={level.label}
+                          min="1"
+                        />
+                      )}
+                    </div>
+                  ))}
 
                   <div className="space-y-2">
                     <Label htmlFor="position">Posição *</Label>
@@ -887,11 +912,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   className={`rounded-lg p-4 shadow-xs text-card-foreground ${
                     occupiedSlotMatch
                       ? "border border-destructive/40 bg-destructive/5"
-                      : formData.freezerId &&
-                          formData.shelf &&
-                          formData.rightLeft &&
-                          formData.box &&
-                          formData.position
+                      : locationComplete
                         ? "border border-primary/30 bg-primary/5"
                         : "border border-amber-600/30 bg-amber-50/25"
                   }`}
@@ -911,27 +932,29 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-72 text-sm">
-                        <p className="font-medium mb-2">Legenda dos códigos de localização</p>
+                        <p className="font-medium mb-2">
+                          Legenda dos códigos de localização ({typeConfig.label})
+                        </p>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">F5</span>
-                            <span className="text-muted-foreground">Congelador 5</span>
+                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">{typeConfig.prefix}1</span>
+                            <span className="text-muted-foreground">{typeConfig.label} 1</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">S1</span>
-                            <span className="text-muted-foreground">Prateleira 1</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded">B1</span>
-                            <span className="text-muted-foreground">Box 1</span>
-                          </div>
+                          {typeConfig.levels.map((level) => (
+                            <div key={level.key} className="flex items-center gap-2">
+                              <span className="font-mono bg-muted px-1.5 py-0.5 rounded">
+                                {level.kind === "select" ? level.options?.[0] : `${level.prefix}1`}
+                              </span>
+                              <span className="text-muted-foreground">{level.label} 1</span>
+                            </div>
+                          ))}
                           <div className="flex items-center gap-2">
                             <span className="font-mono bg-muted px-1.5 py-0.5 rounded">P1</span>
                             <span className="text-muted-foreground">Posição 1</span>
                           </div>
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground">
-                          Exemplo: F5-S1-D-B1-P1 = Congelador 5, Prateleira 1, Direita, Box 1, Posição 1
+                          Exemplo: {legendExample}
                         </p>
                       </PopoverContent>
                     </Popover>
@@ -945,34 +968,19 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                     ) : (
                       <span
                         className={
-                          formData.freezerId &&
-                          formData.shelf &&
-                          formData.rightLeft &&
-                          formData.box &&
-                          formData.position
+                          locationComplete
                             ? "text-primary font-semibold"
                             : "text-amber-600 font-medium"
                         }
                       >
-                        {formData.freezerId &&
-                        formData.shelf &&
-                        formData.rightLeft &&
-                        formData.box &&
-                        formData.position
-                          ? `${
-                              freezers.find((f) => f._id === formData.freezerId)
-                                ?.code || ""
-                            }-${formData.shelf}-${formData.rightLeft}-${
-                              formData.box
-                            }-${formData.position}`
-                          : "Complete all fields to see location"}
+                        {locationPreview || "Complete all fields to see location"}
                       </span>
                     )}
                   </p>
                 </div>
 
                 <div className="min-h-[28rem]">
-                  {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
+                  {formData.equipmentId && pathComplete ? (
                     boxConfigLoading ? (
                       <div className="space-y-2">
                         <Skeleton className="h-4 w-40" />
@@ -1018,7 +1026,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                     )
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
+                      Seleccione o equipamento e preencha os campos de localização para ver as posições ocupadas.
                     </p>
                   )}
                 </div>

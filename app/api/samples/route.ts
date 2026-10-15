@@ -1,19 +1,22 @@
-import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 import { type NextRequest, NextResponse } from "next/server"
+import { getDepartmentFilter, requireSession } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
+  const auth = await requireSession(request)
+  if (!auth.ok) return auth.response
+
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get("search")
     const sampleType = searchParams.get("sampleType")
     const project = searchParams.get("project")
-    const freezerId = searchParams.get("freezerId")
+    const equipmentId = searchParams.get("equipmentId")
 
-    const query: any = {}
+    const query: any = { ...getDepartmentFilter(auth.session) }
 
-    if (freezerId) {
-      query.freezerId = freezerId
+    if (equipmentId) {
+      query.equipmentId = equipmentId
     }
 
     // Search term (patientCode, sampleType, project, notes)
@@ -37,9 +40,7 @@ export async function GET(request: NextRequest) {
       query.project = new RegExp(`^${project}$`, "i")
     }
 
-    const { db } = await connectToDatabase()
-
-    const samples = await db.collection("samples").find(query).toArray()
+    const samples = await auth.db.collection("samples").find(query).toArray()
 
     return NextResponse.json(samples)
   } catch (error) {
@@ -49,16 +50,28 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireSession(request)
+  if (!auth.ok) return auth.response
+
   try {
     const body = await request.json()
-    const { db } = await connectToDatabase()
+    const departmentFilter = getDepartmentFilter(auth.session)
+
+    // O equipamento referenciado tem de pertencer ao mesmo departamento.
+    if (!ObjectId.isValid(body.equipmentId)) {
+      return NextResponse.json({ error: "Equipamento inválido" }, { status: 400 })
+    }
+    const equipment = await auth.db
+      .collection("equipment")
+      .findOne({ _id: new ObjectId(body.equipmentId), ...departmentFilter })
+    if (!equipment) {
+      return NextResponse.json({ error: "Equipamento não encontrado" }, { status: 404 })
+    }
 
     // Verifica se já existe uma amostra na mesma localização
-    const existingSample = await db.collection("samples").findOne({
-      freezerId: body.freezerId,
-      shelf: body.shelf,
-      rightLeft: body.rightLeft,
-      box: body.box,
+    const existingSample = await auth.db.collection("samples").findOne({
+      equipmentId: body.equipmentId,
+      path: body.path,
       position: body.position,
     })
 
@@ -69,17 +82,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await db.collection("samples").insertOne({
+    const departmentId = auth.session.role === "superadmin" ? equipment.departmentId : auth.session.departmentId
+
+    const result = await auth.db.collection("samples").insertOne({
       ...body,
+      departmentId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     })
 
-    const newSample = await db.collection("samples").findOne({ _id: result.insertedId })
+    const newSample = await auth.db.collection("samples").findOne({ _id: result.insertedId })
 
-    // 3. Atualiza o campo `currentSamples` no freezer correspondente
-    await db.collection("freezers").updateOne(
-      { _id: new ObjectId(body.freezerId) },
+    await auth.db.collection("equipment").updateOne(
+      { _id: new ObjectId(body.equipmentId) },
       { $inc: { currentSamples: 1 } }
     )
 

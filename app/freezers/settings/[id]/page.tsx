@@ -50,7 +50,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
   // Load freezer data
   const fetchFreezerById = async () => {
     try {
-      const response = await fetch(`/api/freezers/${id}`)
+      const response = await fetch(`/api/equipment/${id}`)
       if (response.ok) {
         const data = await response.json()
         setFormData(data)
@@ -75,7 +75,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
     setLoading(true)
 
     try {
-      await fetch(`/api/freezers/${id}`, {
+      await fetch(`/api/equipment/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -128,7 +128,7 @@ export default function FreezerSettingsPage({ params }: { params: Promise<{ id: 
       setLoading(true)
   
       try {
-        const response = await fetch(`/api/freezers/${id}`, {
+        const response = await fetch(`/api/equipment/${id}`, {
           method: "DELETE",
         });
 

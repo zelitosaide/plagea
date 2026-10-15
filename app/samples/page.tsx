@@ -40,10 +40,9 @@ interface Sample {
   sampleType: string;
   sampleQuantity: string;
   project: string;
-  freezerId: string;
-  freezerCode: string;
-  shelf: string;
-  box: string;
+  equipmentId: string;
+  equipmentCode: string;
+  path: string[];
   position: string;
   entryDate: string;
   expiryDate: string;
@@ -61,14 +60,14 @@ export default function SamplesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterProject, setFilterProject] = useState("all");
-  const [freezerFilter, setFreezerFilter] = useState<string | null>(null);
+  const [equipmentFilter, setEquipmentFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   // Initialize state from URL parameters
   useEffect(() => {
     const page = searchParams.get("page");
-    const freezer = searchParams.get("freezer");
+    const equipment = searchParams.get("equipment");
     const type = searchParams.get("type");
     const project = searchParams.get("project");
     const search = searchParams.get("search");
@@ -76,8 +75,8 @@ export default function SamplesPage() {
     if (page) {
       setCurrentPage(Number.parseInt(page));
     }
-    if (freezer) {
-      setFreezerFilter(freezer);
+    if (equipment) {
+      setEquipmentFilter(equipment);
     }
     if (type) {
       setFilterType(type);
@@ -101,10 +100,10 @@ export default function SamplesPage() {
       filterType === "all" || sample.sampleType === filterType;
     const matchesProject =
       filterProject === "all" || sample.project === filterProject;
-    const matchesFreezer =
-      !freezerFilter || sample.freezerId === freezerFilter.split(":")[0];
+    const matchesEquipment =
+      !equipmentFilter || sample.equipmentId === equipmentFilter.split(":")[0];
 
-    return matchesSearch && matchesType && matchesProject && matchesFreezer;
+    return matchesSearch && matchesType && matchesProject && matchesEquipment;
   });
 
   // Calculate total pages
@@ -125,8 +124,8 @@ export default function SamplesPage() {
     if (page > 1) {
       params.set("page", page.toString());
     }
-    if (freezerFilter) {
-      params.set("freezer", freezerFilter);
+    if (equipmentFilter) {
+      params.set("equipment", equipmentFilter);
     }
     if (filterType !== "all") {
       params.set("type", filterType);
@@ -156,12 +155,12 @@ export default function SamplesPage() {
   // Update URL when filters change
   useEffect(() => {
     updateURL(currentPage);
-  }, [searchTerm, filterType, filterProject, freezerFilter, currentPage]);
+  }, [searchTerm, filterType, filterProject, equipmentFilter, currentPage]);
 
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterType, filterProject, freezerFilter]);
+  }, [searchTerm, filterType, filterProject, equipmentFilter]);
 
   const isExpiringSoon = (expiryDate: string) => {
     const expiry = new Date(expiryDate);
@@ -198,14 +197,14 @@ export default function SamplesPage() {
     }
   };
 
-  const clearFreezerFilter = () => {
-    setFreezerFilter(null);
+  const clearEquipmentFilter = () => {
+    setEquipmentFilter(null);
   };
 
-  const getFreezerName = (freezerId: string) => {
-    return freezerId
-      ? freezerId.split(":")[1] || "Unknown Freezer"
-      : "All Freezers";
+  const getEquipmentName = (equipmentId: string) => {
+    return equipmentId
+      ? equipmentId.split(":")[1] || "Unknown Equipment"
+      : "All Equipment";
   };
 
   // Handle search and filter changes
@@ -251,15 +250,15 @@ export default function SamplesPage() {
           <p className="text-sm text-muted-foreground mt-1">
             Pesquisar, filtrar e gerenciar amostras de laboratório
           </p>
-          {freezerFilter && (
+          {equipmentFilter && (
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="outline" className="flex items-center gap-1">
-                Filtrado por: {getFreezerName(freezerFilter)}
+                Filtrado por: {getEquipmentName(equipmentFilter)}
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={clearFreezerFilter}
+                  onClick={clearEquipmentFilter}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -335,9 +334,9 @@ export default function SamplesPage() {
           <CardHeader>
             <CardTitle>
               Resultados da Amostra ({filteredSamples.length})
-              {freezerFilter && (
+              {equipmentFilter && (
                 <span className="text-sm font-normal text-muted-foreground ml-2">
-                  in {getFreezerName(freezerFilter)}
+                  in {getEquipmentName(equipmentFilter)}
                 </span>
               )}
             </CardTitle>
@@ -361,9 +360,9 @@ export default function SamplesPage() {
                 {currentSamples.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">
-                      {freezerFilter
-                        ? `Nenhuma amostra encontrada em ${getFreezerName(
-                            freezerFilter
+                      {equipmentFilter
+                        ? `Nenhuma amostra encontrada em ${getEquipmentName(
+                            equipmentFilter
                           )}`
                         : "Nenhuma amostra encontrada que corresponda aos seus critérios"}
                     </p>
@@ -405,8 +404,7 @@ export default function SamplesPage() {
                                 <span className="font-medium">
                                   Localização:
                                 </span>{" "}
-                                {sample.freezerCode}-{sample.shelf}-{sample.box}
-                                -{sample.position}
+                                {[sample.equipmentCode, ...(sample.path || []), sample.position].join("-")}
                               </p>
                             </div>
                             <div>
@@ -461,13 +459,8 @@ Quantidade da Amostra: ${
 Projecto: ${sample.project}
 
 LOCALIZAÇÃO:
-Congelador: ${sample.freezerCode}
-Prateleira: ${sample.shelf}
-Box: ${sample.box}
-Posição: ${sample.position}
-Localização Completa: ${sample.freezerCode}-${sample.shelf}-${sample.box}-${
-                                  sample.position
-                                }
+Equipamento: ${sample.equipmentCode}
+Localização Completa: ${[sample.equipmentCode, ...(sample.path || []), sample.position].join("-")}
 
 DATAS E HORÁRIOS:
 Data de Entrada: ${sample.entryDate}

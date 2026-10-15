@@ -74,14 +74,13 @@ export default function FreezersPage() {
   }
 
   const handleViewSamples = (freezer: any) => {
-    // Navigate to samples page with freezer filter
-    // router.push(`/samples?freezer=${freezer.code}`)
-    router.push(`/samples?freezer=${freezer._id}:${freezer.name}`)
+    // Navigate to samples page with equipment filter
+    router.push(`/samples?equipment=${freezer._id}:${freezer.name}`)
   }
 
   const fetchFreezers = async () => {
     try {
-      const response = await fetch("/api/freezers")
+      const response = await fetch("/api/equipment?type=freezer")
       if (response.ok) {
         const data = await response.json()
         setFreezers(data)

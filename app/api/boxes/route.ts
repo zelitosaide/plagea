@@ -1,28 +1,39 @@
-import { connectToDatabase } from "@/lib/mongodb"
 import { type NextRequest, NextResponse } from "next/server"
+import { ObjectId, type Db } from "mongodb"
+import { getDepartmentFilter, requireSession } from "@/lib/auth"
+import { toPathKey } from "@/lib/equipment-types"
 
-// Uma "box" é identificada pela combinação freezerId+shelf+rightLeft+box
-// (a mesma chave já usada para saber se uma posição está ocupada). Não é
+// Uma "box" é identificada pela combinação equipmentId+pathKey (pathKey =
+// os níveis de localização, ex. ["S1","D","B1"], unidos por "/"). Não é
 // uma colecção pré-populada: só passa a existir quando alguém define as
 // suas dimensões pela primeira vez.
 
+async function verifyEquipmentOwnership(db: Db, equipmentId: string, departmentFilter: Record<string, unknown>) {
+  if (!ObjectId.isValid(equipmentId)) return false
+  const equipment = await db.collection("equipment").findOne({ _id: new ObjectId(equipmentId), ...departmentFilter })
+  return !!equipment
+}
+
 export async function GET(request: NextRequest) {
+  const auth = await requireSession(request)
+  if (!auth.ok) return auth.response
+
   try {
     const { searchParams } = new URL(request.url)
-    const freezerId = searchParams.get("freezerId")
-    const shelf = searchParams.get("shelf")
-    const rightLeft = searchParams.get("rightLeft")
-    const box = searchParams.get("box")
+    const equipmentId = searchParams.get("equipmentId")
+    const pathParam = searchParams.get("path")
 
-    if (!freezerId || !shelf || !rightLeft || !box) {
-      return NextResponse.json(
-        { error: "freezerId, shelf, rightLeft e box são obrigatórios" },
-        { status: 400 }
-      )
+    if (!equipmentId || !pathParam) {
+      return NextResponse.json({ error: "equipmentId e path são obrigatórios" }, { status: 400 })
     }
 
-    const { db } = await connectToDatabase()
-    const boxConfig = await db.collection("boxes").findOne({ freezerId, shelf, rightLeft, box })
+    const departmentFilter = getDepartmentFilter(auth.session)
+    const owned = await verifyEquipmentOwnership(auth.db, equipmentId, departmentFilter)
+    if (!owned) {
+      return NextResponse.json({ error: "Equipamento não encontrado" }, { status: 404 })
+    }
+
+    const boxConfig = await auth.db.collection("boxes").findOne({ equipmentId, pathKey: pathParam })
 
     return NextResponse.json(boxConfig)
   } catch (error) {
@@ -32,27 +43,36 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireSession(request)
+  if (!auth.ok) return auth.response
+
   try {
     const body = await request.json()
-    const { freezerId, shelf, rightLeft, box, rows, columns } = body
+    const { equipmentId, path, rows, columns } = body
 
-    if (!freezerId || !shelf || !rightLeft || !box || !rows || !columns) {
+    if (!equipmentId || !Array.isArray(path) || path.length === 0 || !rows || !columns) {
       return NextResponse.json({ error: "Dados em falta" }, { status: 400 })
     }
 
-    const { db } = await connectToDatabase()
+    const departmentFilter = getDepartmentFilter(auth.session)
+    const owned = await verifyEquipmentOwnership(auth.db, equipmentId, departmentFilter)
+    if (!owned) {
+      return NextResponse.json({ error: "Equipamento não encontrado" }, { status: 404 })
+    }
+
+    const pathKey = toPathKey(path)
     const now = new Date().toISOString()
 
-    await db.collection("boxes").updateOne(
-      { freezerId, shelf, rightLeft, box },
+    await auth.db.collection("boxes").updateOne(
+      { equipmentId, pathKey },
       {
-        $set: { freezerId, shelf, rightLeft, box, rows, columns, updatedAt: now },
+        $set: { equipmentId, path, pathKey, rows, columns, updatedAt: now },
         $setOnInsert: { createdAt: now },
       },
       { upsert: true }
     )
 
-    const updated = await db.collection("boxes").findOne({ freezerId, shelf, rightLeft, box })
+    const updated = await auth.db.collection("boxes").findOne({ equipmentId, pathKey })
     return NextResponse.json(updated)
   } catch (error) {
     console.error("Error saving box config:", error)
