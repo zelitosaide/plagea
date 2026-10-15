@@ -756,6 +756,17 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Observações</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    placeholder="Notas adicionais sobre a amostra..."
+                    rows={3}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -872,58 +883,6 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
 
-                <div className="min-h-[28rem]">
-                  {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
-                    boxConfigLoading ? (
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-40" />
-                        <Skeleton className="h-[26rem] w-full" />
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>
-                            Posições na Caixa ({boxRows}x{boxColumns})
-                          </Label>
-                          {!editingBoxDimensions && (
-                            <Button
-                              type="button"
-                              variant="link"
-                              size="sm"
-                              className="h-auto p-0 text-xs"
-                              onClick={() => setEditingBoxDimensions(true)}
-                            >
-                              {boxConfig ? "Alterar dimensões" : "Definir dimensões"}
-                            </Button>
-                          )}
-                        </div>
-
-                        {editingBoxDimensions ? (
-                          <BoxDimensionsEditor
-                            initialRows={boxRows}
-                            initialColumns={boxColumns}
-                            onSave={handleSaveBoxDimensions}
-                            onCancel={() => setEditingBoxDimensions(false)}
-                            saving={savingBoxDimensions}
-                          />
-                        ) : (
-                          <PositionPicker
-                            occupied={occupiedInCurrentBox}
-                            selected={selectedPositionNumber}
-                            onSelect={(pos) => handleInputChange("position", `P${pos}`)}
-                            maxPosition={boxRows * boxColumns}
-                            columns={boxColumns}
-                          />
-                        )}
-                      </div>
-                    )
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
-                    </p>
-                  )}
-                </div>
-
                 <div
                   className={`rounded-lg p-4 shadow-xs text-card-foreground ${
                     occupiedSlotMatch
@@ -1012,15 +971,56 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Observações</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
-                    placeholder="Notas adicionais sobre a amostra..."
-                    rows={3}
-                  />
+                <div className="min-h-[28rem]">
+                  {formData.freezerId && formData.shelf && formData.rightLeft && formData.box ? (
+                    boxConfigLoading ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-[26rem] w-full" />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>
+                            Posições na Caixa ({boxRows}x{boxColumns})
+                          </Label>
+                          {!editingBoxDimensions && (
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-xs"
+                              onClick={() => setEditingBoxDimensions(true)}
+                            >
+                              {boxConfig ? "Alterar dimensões" : "Definir dimensões"}
+                            </Button>
+                          )}
+                        </div>
+
+                        {editingBoxDimensions ? (
+                          <BoxDimensionsEditor
+                            initialRows={boxRows}
+                            initialColumns={boxColumns}
+                            onSave={handleSaveBoxDimensions}
+                            onCancel={() => setEditingBoxDimensions(false)}
+                            saving={savingBoxDimensions}
+                          />
+                        ) : (
+                          <PositionPicker
+                            occupied={occupiedInCurrentBox}
+                            selected={selectedPositionNumber}
+                            onSelect={(pos) => handleInputChange("position", `P${pos}`)}
+                            maxPosition={boxRows * boxColumns}
+                            columns={boxColumns}
+                          />
+                        )}
+                      </div>
+                    )
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Seleccione o congelador, a prateleira, o lado e a box para ver as posições ocupadas.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
