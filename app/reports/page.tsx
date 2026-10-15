@@ -183,8 +183,12 @@ function buildReportCSV(data: ReportData, isSuperAdmin: boolean): string {
 const countChartConfig = { count: { label: "Amostras", color: "hsl(var(--primary))" } } satisfies ChartConfig
 const utilizationChartConfig = { utilizationPercentage: { label: "Utilização %" } } satisfies ChartConfig
 
-function truncateLabel(value: string, max = 20): string {
-  return value.length > max ? `${value.slice(0, max - 1)}…` : value
+// Largura do eixo das categorias calculada a partir do rótulo mais
+// comprido dos dados — os nomes nunca são cortados com "…", o eixo é
+// que se ajusta a eles.
+function yAxisWidth(labels: string[], min = 90, max = 260): number {
+  const longest = labels.reduce((acc, label) => Math.max(acc, label.length), 0)
+  return Math.min(max, Math.max(min, longest * 7 + 24))
 }
 
 export default function ReportsPage() {
@@ -385,10 +389,9 @@ export default function ReportsPage() {
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={128}
+                        width={yAxisWidth(typeChartData.map((d) => d.name))}
                         interval={0}
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value: string) => truncateLabel(value, 15)}
                       />
                       <ChartTooltip
                         cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
@@ -427,10 +430,9 @@ export default function ReportsPage() {
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={128}
+                        width={yAxisWidth(projectChartData.map((d) => d.name))}
                         interval={0}
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value: string) => truncateLabel(value, 15)}
                       />
                       <ChartTooltip
                         cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
@@ -482,10 +484,9 @@ export default function ReportsPage() {
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={160}
+                        width={yAxisWidth(occupancyChartData.map((d) => d.name))}
                         interval={0}
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value: string) => truncateLabel(value, 18)}
                       />
                       <ChartTooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
                       <Bar dataKey="utilizationPercentage" radius={[0, 6, 6, 0]} maxBarSize={22}>
@@ -602,10 +603,9 @@ export default function ReportsPage() {
                         type="category"
                         tickLine={false}
                         axisLine={false}
-                        width={130}
+                        width={yAxisWidth(departmentChartData.map((d) => d.name))}
                         interval={0}
                         tick={{ fontSize: 12 }}
-                        tickFormatter={(value: string) => truncateLabel(value, 14)}
                       />
                       <ChartTooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} content={<ChartTooltipContent />} formatter={(value) => `${value}%`} />
                       <Bar dataKey="utilizationPercentage" radius={[0, 6, 6, 0]} maxBarSize={28}>
