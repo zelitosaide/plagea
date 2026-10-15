@@ -50,7 +50,7 @@ export default function GuidePage() {
 
   const sections = [
     { id: "visao-geral", label: "Visão Geral" },
-    { id: "departamentos-papeis", label: "Departamentos e Papéis" },
+    ...(isSuperAdmin ? [{ id: "departamentos-papeis", label: "Departamentos e Papéis" }] : []),
     { id: "equipamento", label: "Equipamento de Armazenamento" },
     { id: "amostras", label: "Gerir Amostras" },
     { id: "pesquisar-partilhar", label: "Pesquisar e Partilhar Amostras" },
@@ -114,42 +114,43 @@ export default function GuidePage() {
             </p>
           </section>
 
-          {/* Departamentos e Papéis */}
-          <section className="space-y-3 print:break-inside-avoid">
-            <SectionHeading id="departamentos-papeis" icon={Building2} title="Departamentos e Papéis" />
-            <p className="text-sm leading-relaxed text-foreground">
-              Cada conta tem um papel, que determina o que consegue ver e fazer:
-            </p>
-            <div className="space-y-3">
-              <div className={`flex gap-3 items-start rounded-md ${role === "user" ? "bg-primary/5 p-2 -m-2" : ""}`}>
-                <Badge className="mt-0.5 shrink-0">Utilizador</Badge>
-                <p className="text-sm text-muted-foreground">
-                  Adiciona, edita e consulta equipamento e amostras do seu departamento. Não gere contas de outras pessoas.
-                  {role === "user" && <span className="text-primary font-medium"> — é o seu papel actual.</span>}
-                </p>
+          {/* Departamentos e Papéis — só o superadmin gere isto, por isso só
+              o superadmin precisa de o ver no guia. */}
+          {isSuperAdmin && (
+            <section className="space-y-3 print:break-inside-avoid">
+              <SectionHeading id="departamentos-papeis" icon={Building2} title="Departamentos e Papéis" />
+              <p className="text-sm leading-relaxed text-foreground">
+                Cada conta tem um papel, que determina o que consegue ver e fazer:
+              </p>
+              <div className="space-y-3">
+                <div className="flex gap-3 items-start">
+                  <Badge className="mt-0.5 shrink-0">Utilizador</Badge>
+                  <p className="text-sm text-muted-foreground">
+                    Adiciona, edita e consulta equipamento e amostras do seu departamento. Não gere contas de outras pessoas.
+                  </p>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <Badge variant="secondary" className="mt-0.5 shrink-0">Admin</Badge>
+                  <p className="text-sm text-muted-foreground">
+                    Tudo o que um Utilizador pode fazer, mais a gestão dos utilizadores do seu próprio departamento (em
+                    "Administração").
+                  </p>
+                </div>
+                <div className="flex gap-3 items-start rounded-md bg-primary/5 p-2 -m-2">
+                  <Badge variant="outline" className="mt-0.5 shrink-0">Superadmin</Badge>
+                  <p className="text-sm text-muted-foreground">
+                    Papel ao nível da instituição: cria departamentos, vê e gere equipamento e amostras de
+                    <em> todos</em> os departamentos, e é o único que atribui o departamento de um novo utilizador.
+                    <span className="text-primary font-medium"> — é o seu papel actual.</span>
+                  </p>
+                </div>
               </div>
-              <div className={`flex gap-3 items-start rounded-md ${role === "admin" ? "bg-primary/5 p-2 -m-2" : ""}`}>
-                <Badge variant="secondary" className="mt-0.5 shrink-0">Admin</Badge>
-                <p className="text-sm text-muted-foreground">
-                  Tudo o que um Utilizador pode fazer, mais a gestão dos utilizadores do seu próprio departamento (em
-                  "Administração").
-                  {role === "admin" && <span className="text-primary font-medium"> — é o seu papel actual.</span>}
-                </p>
-              </div>
-              <div className={`flex gap-3 items-start rounded-md ${isSuperAdmin ? "bg-primary/5 p-2 -m-2" : ""}`}>
-                <Badge variant="outline" className="mt-0.5 shrink-0">Superadmin</Badge>
-                <p className="text-sm text-muted-foreground">
-                  Papel ao nível da instituição: cria departamentos, vê e gere equipamento e amostras de
-                  <em> todos</em> os departamentos, e é o único que atribui o departamento de um novo utilizador.
-                  {isSuperAdmin && <span className="text-primary font-medium"> — é o seu papel actual.</span>}
-                </p>
-              </div>
-            </div>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Um utilizador de um departamento nunca vê equipamento, amostras ou utilizadores de outro departamento —
-              mesmo que soubesse o link exacto, o sistema recusa o acesso.
-            </p>
-          </section>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Um utilizador de um departamento nunca vê equipamento, amostras ou utilizadores de outro departamento —
+                mesmo que soubesse o link exacto, o sistema recusa o acesso.
+              </p>
+            </section>
+          )}
 
           {/* Equipamento */}
           <section className="space-y-4 print:break-inside-avoid">
