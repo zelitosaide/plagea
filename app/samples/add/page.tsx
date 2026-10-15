@@ -489,8 +489,8 @@ export default function AddSamplePage() {
         .filter((slot) => !Number.isNaN(slot.position))
     : [];
 
-  const boxRows = boxConfig?.rows || 9;
-  const boxColumns = boxConfig?.columns || 9;
+  const boxRows = boxConfig?.rows || typeConfig.defaultBoxRows;
+  const boxColumns = boxConfig?.columns || typeConfig.defaultBoxColumns;
 
   const selectedPositionNumber = formData.position
     ? Number.parseInt(formData.position.replace("P", ""), 10)
@@ -884,7 +884,8 @@ export default function AddSamplePage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label>
-                          Posições na Caixa ({boxRows}x{boxColumns})
+                          Posições{typeConfig.positionLayout === "grid" ? " na Caixa" : ""} (
+                          {typeConfig.positionLayout === "grid" ? `${boxRows}x${boxColumns}` : boxColumns})
                         </Label>
                         {!editingBoxDimensions && (
                           <Button
@@ -906,6 +907,7 @@ export default function AddSamplePage() {
                           onSave={handleSaveBoxDimensions}
                           onCancel={() => setEditingBoxDimensions(false)}
                           saving={savingBoxDimensions}
+                          layout={typeConfig.positionLayout}
                         />
                       ) : (
                         <PositionPicker

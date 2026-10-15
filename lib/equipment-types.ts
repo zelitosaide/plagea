@@ -18,6 +18,17 @@ export type EquipmentTypeConfig = {
   prefix: string;
   hasTemperature: boolean;
   levels: LocationLevel[];
+  /**
+   * "grid": o último nível (ex. Box do congelador) é uma grelha 2D de
+   * posições, com linhas e colunas configuráveis.
+   * "sequence": o último nível (Linha do AB, Gaveta do AL) é uma fila
+   * simples numerada 1..N — fisicamente uma única linha, nunca um
+   * quadrado. O PositionPicker é o mesmo; só muda rows (sempre 1) e
+   * columns (= N).
+   */
+  positionLayout: "grid" | "sequence";
+  defaultBoxRows: number;
+  defaultBoxColumns: number;
 };
 
 export const EQUIPMENT_TYPES: Record<EquipmentType, EquipmentTypeConfig> = {
@@ -31,6 +42,9 @@ export const EQUIPMENT_TYPES: Record<EquipmentType, EquipmentTypeConfig> = {
       { key: "side", label: "Lado", prefix: "", kind: "select", options: ["D", "E"] },
       { key: "box", label: "Box", prefix: "B", kind: "number" },
     ],
+    positionLayout: "grid",
+    defaultBoxRows: 9,
+    defaultBoxColumns: 9,
   },
   ab: {
     type: "ab",
@@ -41,6 +55,9 @@ export const EQUIPMENT_TYPES: Record<EquipmentType, EquipmentTypeConfig> = {
       { key: "drawer", label: "Gaveta", prefix: "G", kind: "number" },
       { key: "line", label: "Linha", prefix: "L", kind: "number" },
     ],
+    positionLayout: "sequence",
+    defaultBoxRows: 1,
+    defaultBoxColumns: 20,
   },
   al: {
     type: "al",
@@ -50,6 +67,9 @@ export const EQUIPMENT_TYPES: Record<EquipmentType, EquipmentTypeConfig> = {
     levels: [
       { key: "drawer", label: "Gaveta", prefix: "G", kind: "number" },
     ],
+    positionLayout: "sequence",
+    defaultBoxRows: 1,
+    defaultBoxColumns: 40,
   },
 };
 
