@@ -916,6 +916,7 @@ export default function AddSamplePage() {
                           onSelect={(pos) => handleInputChange("position", `P${pos}`)}
                           maxPosition={boxRows * boxColumns}
                           columns={boxColumns}
+                          layout={typeConfig.positionLayout}
                         />
                       )}
                     </div>

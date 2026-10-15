@@ -14,6 +14,15 @@ type PositionPickerProps = {
   maxPosition?: number
   columns?: number
   disabled?: boolean
+  /**
+   * "grid" (por defeito): grelha 2D fluida, células dividem a largura
+   * disponível — usado pela Box do Congelador.
+   * "sequence": fila única (Linha do AB, Gaveta do AL). Células de
+   * tamanho fixo em vez de se espremerem para caber na largura; a fila
+   * ganha scroll horizontal quando é mais longa do que o contentor, em
+   * vez de ficar ilegível.
+   */
+  layout?: "grid" | "sequence"
 }
 
 /**
@@ -30,9 +39,38 @@ export function PositionPicker({
   maxPosition = 81,
   columns = 9,
   disabled = false,
+  layout = "grid",
 }: PositionPickerProps) {
   const occupiedMap = new Map(occupied.map((slot) => [slot.position, slot.patientCode]))
   const occupiedCount = occupiedMap.size
+  const positions = Array.from({ length: maxPosition }, (_, i) => i + 1)
+
+  const renderButton = (pos: number) => {
+    const patientCode = occupiedMap.get(pos)
+    const isOccupied = !!patientCode
+    const isSelected = selected === pos
+
+    return (
+      <button
+        key={pos}
+        type="button"
+        disabled={disabled || isOccupied}
+        onClick={() => onSelect(pos)}
+        title={isOccupied ? `Ocupado: ${patientCode}` : `Posição ${pos} livre`}
+        className={cn(
+          "flex h-9 items-center justify-center rounded-sm border text-[11px] font-semibold transition-colors",
+          layout === "sequence" && "w-10 shrink-0",
+          isOccupied
+            ? "border-destructive bg-destructive text-destructive-foreground cursor-not-allowed line-through"
+            : isSelected
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-card text-muted-foreground hover:border-primary hover:bg-accent hover:text-accent-foreground cursor-pointer"
+        )}
+      >
+        {pos}
+      </button>
+    )
+  }
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
@@ -52,38 +90,20 @@ export function PositionPicker({
           </span>
         </div>
       </div>
-      <div className="max-h-[26rem] overflow-y-auto">
-        <div
-          className="grid gap-1.5"
-          style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-        >
-          {Array.from({ length: maxPosition }, (_, i) => i + 1).map((pos) => {
-            const patientCode = occupiedMap.get(pos)
-            const isOccupied = !!patientCode
-            const isSelected = selected === pos
-
-            return (
-              <button
-                key={pos}
-                type="button"
-                disabled={disabled || isOccupied}
-                onClick={() => onSelect(pos)}
-                title={isOccupied ? `Ocupado: ${patientCode}` : `Posição ${pos} livre`}
-                className={cn(
-                  "flex h-9 items-center justify-center rounded-sm border text-[11px] font-semibold transition-colors",
-                  isOccupied
-                    ? "border-destructive bg-destructive text-destructive-foreground cursor-not-allowed line-through"
-                    : isSelected
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-muted-foreground hover:border-primary hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                )}
-              >
-                {pos}
-              </button>
-            )
-          })}
+      {layout === "sequence" ? (
+        <div className="overflow-x-auto overflow-y-hidden">
+          <div className="flex gap-1.5">{positions.map(renderButton)}</div>
         </div>
-      </div>
+      ) : (
+        <div className="max-h-[26rem] overflow-y-auto">
+          <div
+            className="grid gap-1.5"
+            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+          >
+            {positions.map(renderButton)}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

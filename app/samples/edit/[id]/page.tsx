@@ -1022,6 +1022,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                             onSelect={(pos) => handleInputChange("position", `P${pos}`)}
                             maxPosition={boxRows * boxColumns}
                             columns={boxColumns}
+                            layout={typeConfig.positionLayout}
                           />
                         )}
                       </div>
