@@ -26,3 +26,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# notas de trabalho com dados clínicos reais (migração do servidor
+# antigo) — nunca comitar, mesmo estando dentro da pasta do projeto
+/migration-notes/

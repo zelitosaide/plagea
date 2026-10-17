@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -36,8 +37,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PositionPicker } from "@/components/position-picker";
@@ -78,6 +78,9 @@ type ExistingSample = {
 
 export default function AddSamplePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
+  const backHref = from || "/samples";
   const [loading, setLoading] = useState(false);
   const [showEntryCalendar, setShowEntryCalendar] = useState(false);
   const [showExpiryCalendar, setShowExpiryCalendar] = useState(false);
@@ -602,7 +605,7 @@ export default function AddSamplePage() {
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <Link href="/samples">
+          <Link href={backHref}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar para Amostras
@@ -611,7 +614,7 @@ export default function AddSamplePage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Adicionar Nova Amostra</h1>
         </div>
         <div className="flex gap-4">
-          <Link href="/samples">
+          <Link href={backHref}>
             <Button variant="outline" disabled={loading}>
               Cancelar
             </Button>
@@ -1055,7 +1058,7 @@ export default function AddSamplePage() {
           </div>
 
           <div className="mt-6 flex justify-end gap-4">
-            <Link href="/samples">
+            <Link href={backHref}>
               <Button variant="outline" disabled={loading}>
                 Cancelar
               </Button>

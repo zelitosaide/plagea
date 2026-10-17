@@ -27,15 +27,14 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  // useRouter,
-  useSearchParams,
-} from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/confirm-dialog-provider";
 import { buildLocationCode } from "@/lib/equipment-types";
+import { getPageNumbers } from "@/lib/utils";
 
 interface Sample {
   _id: string;
@@ -47,6 +46,9 @@ interface Sample {
   equipmentCode: string;
   path: string[];
   positions: number[];
+  // Só presente em amostras que ficaram sem `positions` na migração de
+  // dados do servidor antigo — a posição que a amostra tentava ocupar.
+  position?: string;
   entryDate: string;
   expiryDate: string;
   labEntryTime: string;
@@ -61,46 +63,39 @@ interface EquipmentOption {
 }
 
 export default function SamplesPage() {
-  // const router = useRouter()
+  const router = useRouter();
   const searchParams = useSearchParams();
   const confirmDialog = useConfirm();
 
   const [samples, setSamples] = useState<Sample[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [filterProject, setFilterProject] = useState("all");
-  const [equipmentFilter, setEquipmentFilter] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
-  // Initialize state from URL parameters
-  useEffect(() => {
-    const page = searchParams.get("page");
+  // Estado inicializado directamente a partir do URL (inicializador lazy
+  // do useState), em vez de um useEffect separado a correr depois do
+  // primeiro render. Com um efeito, há uma corrida: no primeiro render
+  // o estado arranca sempre nos valores por defeito (ex. currentPage=1),
+  // e o efeito que escreve o estado para o URL (updateURL) pode correr
+  // com esse valor desactualizado ANTES do efeito que lê o URL ter
+  // oportunidade de corrigir o estado — reescrevendo o URL de volta para
+  // "/samples" sem os parâmetros, mesmo vindo de um link com "?page=4"
+  // correcto. Lazy initializer lê o URL uma única vez, de forma
+  // síncrona, antes de qualquer efeito correr — sem corrida possível.
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get("search") || "");
+  const [filterType, setFilterType] = useState(() => searchParams.get("type") || "all");
+  const [filterProject, setFilterProject] = useState(() => searchParams.get("project") || "all");
+  const [equipmentFilter, setEquipmentFilter] = useState<string | null>(() => {
     const equipment = searchParams.get("equipment");
-    const type = searchParams.get("type");
-    const project = searchParams.get("project");
-    const search = searchParams.get("search");
-
-    if (page) {
-      setCurrentPage(Number.parseInt(page));
-    }
-    if (equipment) {
-      // Aceita tanto o formato antigo "id:nome" (links antigos guardados)
-      // como o id simples usado actualmente.
-      setEquipmentFilter(equipment.split(":")[0]);
-    }
-    if (type) {
-      setFilterType(type);
-    }
-    if (project) {
-      setFilterProject(project);
-    }
-    if (search) {
-      setSearchTerm(search);
-    }
-  }, [searchParams]);
+    // Aceita tanto o formato antigo "id:nome" (links antigos guardados)
+    // como o id simples usado actualmente.
+    return equipment ? equipment.split(":")[0] : null;
+  });
+  const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = searchParams.get("page");
+    return page ? Number.parseInt(page, 10) || 1 : 1;
+  });
+  const itemsPerPage = 10;
 
   // Filter samples based on search, filters, and freezer
   const filteredSamples = samples.filter((sample) => {
@@ -115,12 +110,19 @@ export default function SamplesPage() {
       filterProject === "all" || sample.project === filterProject;
     const matchesEquipment =
       !equipmentFilter || sample.equipmentId === equipmentFilter;
+    const matchesPending =
+      !showPendingOnly || !sample.positions || sample.positions.length === 0;
 
-    return matchesSearch && matchesType && matchesProject && matchesEquipment;
+    return matchesSearch && matchesType && matchesProject && matchesEquipment && matchesPending;
   });
+
+  const pendingCount = samples.filter(
+    (sample) => !sample.positions || sample.positions.length === 0
+  ).length;
 
   // Calculate total pages
   const totalPages = Math.ceil(filteredSamples.length / itemsPerPage);
+  const pageNumbers = getPageNumbers(currentPage, totalPages);
 
   // Get current samples for the page
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -153,8 +155,12 @@ export default function SamplesPage() {
     const queryString = params.toString();
     const url = queryString ? `/samples?${queryString}` : "/samples";
 
-    // Update URL without refreshing the page
-    window.history.pushState({}, "", url);
+    // Actualiza o URL (sem criar uma entrada nova no histórico a cada
+    // mudança de página/filtro) através do router do Next.js — usar
+    // window.history.pushState directamente deixa o router do Next.js
+    // sem saber destes URLs, e por isso router.back() (ex. ao sair de
+    // "editar amostra") não voltava à página/filtro certos.
+    router.replace(url, { scroll: false });
   };
 
   // Change page function
@@ -165,15 +171,10 @@ export default function SamplesPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Update URL when filters change
+  // Update URL when filters/page change
   useEffect(() => {
     updateURL(currentPage);
   }, [searchTerm, filterType, filterProject, equipmentFilter, currentPage]);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterType, filterProject, equipmentFilter]);
 
   const isExpiringSoon = (expiryDate: string) => {
     const expiry = new Date(expiryDate);
@@ -209,6 +210,7 @@ export default function SamplesPage() {
 
   const clearEquipmentFilter = () => {
     setEquipmentFilter(null);
+    setCurrentPage(1);
   };
 
   const getEquipmentName = (equipmentId: string) => {
@@ -216,21 +218,29 @@ export default function SamplesPage() {
     return equipment ? `${equipment.code} - ${equipment.name}` : "Equipamento desconhecido";
   };
 
-  // Handle search and filter changes
+  // Handle search and filter changes — cada mudança de filtro volta à
+  // página 1 (feito aqui, no momento da mudança, em vez de num useEffect
+  // separado: um efeito com estas dependências também corre no primeiro
+  // render, antes do estado inicializado a partir do URL ter hipótese de
+  // "assentar", e reescrevia a página de volta para 1 logo ao montar).
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
+    setCurrentPage(1);
   };
 
   const handleTypeChange = (value: string) => {
     setFilterType(value);
+    setCurrentPage(1);
   };
 
   const handleProjectChange = (value: string) => {
     setFilterProject(value);
+    setCurrentPage(1);
   };
 
   const handleEquipmentFilterChange = (value: string) => {
     setEquipmentFilter(value === "all" ? null : value);
+    setCurrentPage(1);
   };
 
   const fetchSamples = async () => {
@@ -265,6 +275,14 @@ export default function SamplesPage() {
     fetchEquipmentList();
   }, []);
 
+  // Passado explicitamente para "ver"/"editar", em vez de confiar no
+  // histórico do browser (router.back()) — assim "voltar" chega sempre
+  // exactamente a esta página/filtro, sem depender de cache do Next.js.
+  const currentListQuery = searchParams.toString();
+  const returnTo = encodeURIComponent(
+    currentListQuery ? `/samples?${currentListQuery}` : "/samples"
+  );
+
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex justify-between items-center">
@@ -290,8 +308,26 @@ export default function SamplesPage() {
               </Badge>
             </div>
           )}
+          {pendingCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowPendingOnly((prev) => !prev)}
+              className="mt-2"
+              title="Amostras que ficaram sem posição atribuída durante a migração de dados"
+            >
+              <Badge
+                variant={showPendingOnly ? "default" : "destructive"}
+                className="flex items-center gap-1 cursor-pointer"
+              >
+                <AlertTriangle className="h-3 w-3" />
+                {showPendingOnly
+                  ? `A mostrar só pendentes (${pendingCount}) — clique para limpar`
+                  : `${pendingCount} amostra(s) com posição pendente`}
+              </Badge>
+            </button>
+          )}
         </div>
-        <Link href="/samples/add">
+        <Link href={`/samples/add?from=${returnTo}`}>
           <Button className="gap-2">Adicionar Nova Amostra</Button>
         </Link>
       </div>
@@ -435,6 +471,16 @@ export default function SamplesPage() {
                                 A Expirar em Breve
                               </Badge>
                             )}
+                            {(!sample.positions || sample.positions.length === 0) && (
+                              <Badge
+                                variant="destructive"
+                                className="flex items-center gap-1"
+                                title="Esta amostra ficou sem posição atribuída durante a migração de dados — precisa de resolução manual."
+                              >
+                                <AlertTriangle className="h-3 w-3" />
+                                Posição pendente{sample.position ? ` (pretendia ${sample.position})` : ""}
+                              </Badge>
+                            )}
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div>
@@ -452,7 +498,14 @@ export default function SamplesPage() {
                                 <span className="font-medium">
                                   Localização:
                                 </span>{" "}
-                                {buildLocationCode(sample.equipmentCode, sample.path || [], sample.positions)}
+                                {sample.positions && sample.positions.length > 0 ? (
+                                  buildLocationCode(sample.equipmentCode, sample.path || [], sample.positions)
+                                ) : (
+                                  <span className="text-destructive font-medium">
+                                    Por atribuir
+                                    {sample.position && ` (pretendia ${buildLocationCode(sample.equipmentCode, sample.path || [])}-${sample.position})`}
+                                  </span>
+                                )}
                               </p>
                             </div>
                             <div>
@@ -490,12 +543,12 @@ export default function SamplesPage() {
                           )}
                         </div>
                         <div className="flex gap-2">
-                          <Link href={`/samples/${sample._id}`}>
+                          <Link href={`/samples/${sample._id}?from=${returnTo}`}>
                             <Button variant="outline" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Link href={`/samples/edit/${sample._id}`}>
+                          <Link href={`/samples/edit/${sample._id}?from=${returnTo}`}>
                             <Button variant="outline" size="sm">
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -527,8 +580,15 @@ export default function SamplesPage() {
                         Anterior
                       </Button>
 
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                        (page) => (
+                      {pageNumbers.map((page, index) =>
+                        page === "ellipsis" ? (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="w-8 h-8 flex items-center justify-center text-muted-foreground text-sm"
+                          >
+                            …
+                          </span>
+                        ) : (
                           <Button
                             key={page}
                             variant={

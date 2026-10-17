@@ -192,6 +192,12 @@ export default function GuidePage() {
               de amostra, para ajustar ao tamanho real. Posições já ocupadas por outra amostra aparecem marcadas e
               não podem ser escolhidas outra vez.
             </p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Uma amostra pode ocupar <strong>mais do que uma posição</strong> (ex. vários tubos do
+              mesmo paciente, lado a lado). No campo "Nr. posições", indique quantas — ao clicar numa
+              posição livre da grelha, as seguintes ficam pré-seleccionadas automaticamente; pode depois
+              clicar em posições individuais para ajustar a selecção antes de guardar.
+            </p>
           </section>
 
           {/* Amostras */}
@@ -202,7 +208,14 @@ export default function GuidePage() {
               (código do paciente, tipo, quantidade, projecto, datas) e depois o local de
               armazenamento: escolha o equipamento e vá preenchendo os níveis de localização
               (Prateleira/Gaveta/Linha, conforme o tipo) até chegar à grelha ou fila de posições,
-              onde escolhe a posição livre.
+              onde escolhe a(s) posição(ões) livre(s) — ver "Equipamento de Armazenamento" acima
+              sobre seleccionar mais do que uma.
+            </p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Amostras com tipos sólidos (ex. Bloco, Lâmina) não pedem "Quantidade no Criotubo" —
+              esse campo só aparece para tipos líquidos. A Data de Validade e as horas de entrada
+              no laboratório/armazenamento são opcionais; só o código do paciente, tipo, projecto,
+              data de entrada e localização são obrigatórios.
             </p>
             <p className="text-sm leading-relaxed text-foreground">
               Ao guardar, é levado directamente para a página dessa amostra — onde pode confirmar
@@ -230,7 +243,8 @@ export default function GuidePage() {
                   <Copy className="h-3.5 w-3.5" />
                   Copiar
                 </span>{" "}
-                junto ao código de localização (ex. <span className="font-mono">F1-S1-D-B1-P1</span>) copia só esse
+                junto ao código de localização (ex. <span className="font-mono">F1-S1-D-B1-P1</span>, ou{" "}
+                <span className="font-mono">F1-S1-D-B1-P1-4</span> se ocupar várias posições seguidas) copia só esse
                 código, pronto a colar num formulário externo como o REDCap.
               </p>
             </div>
@@ -320,6 +334,14 @@ export default function GuidePage() {
                   </p>
                 </div>
               )}
+              <div>
+                <p className="text-sm font-medium">Como marco que uma amostra ocupa várias posições?</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  No formulário de amostra, indique quantas no campo "Nr. posições" e clique numa posição
+                  livre da grelha — as seguintes ficam seleccionadas automaticamente. Pode depois clicar
+                  em qualquer posição individual para ajustar (adicionar ou remover) antes de guardar.
+                </p>
+              </div>
               <div>
                 <p className="text-sm font-medium">Posso mudar o tamanho de uma Box, Linha ou Gaveta depois de já ter amostras lá dentro?</p>
                 <p className="text-sm text-muted-foreground mt-1">

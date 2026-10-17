@@ -56,11 +56,11 @@ async function main() {
   );
   console.log(`Utilizadores atribuídos ao departamento: ${usersResult.modifiedCount}`);
 
-  const freezersResult = await db.collection("freezers").updateMany(
+  const equipmentResult = await db.collection("equipment").updateMany(
     { departmentId: { $exists: false } },
     { $set: { departmentId: department._id.toString(), updatedAt: new Date().toISOString() } }
   );
-  console.log(`Congeladores atribuídos ao departamento: ${freezersResult.modifiedCount}`);
+  console.log(`Equipamento atribuído ao departamento: ${equipmentResult.modifiedCount}`);
 
   const samplesResult = await db.collection("samples").updateMany(
     { departmentId: { $exists: false } },

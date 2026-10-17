@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EQUIPMENT_TYPE_LIST, getEquipmentTypeConfig, type EquipmentType } from "@/lib/equipment-types"
+import { getPageNumbers } from "@/lib/utils"
 
 type Freezer = {
   _id: string
@@ -41,6 +42,7 @@ export default function FreezersPage() {
 
   // Calculate total pages
   const totalPages = Math.ceil(filteredFreezers.length / itemsPerPage)
+  const pageNumbers = getPageNumbers(currentPage, totalPages)
 
   // Get current freezers for the page
   const indexOfLastItem = currentPage * itemsPerPage
@@ -312,17 +314,26 @@ export default function FreezersPage() {
                 Anterior
               </Button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => changePage(page)}
-                  className="w-8 h-8 p-0"
-                >
-                  {page}
-                </Button>
-              ))}
+              {pageNumbers.map((page, index) =>
+                page === "ellipsis" ? (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="w-8 h-8 flex items-center justify-center text-muted-foreground text-sm"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => changePage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                )
+              )}
 
               <Button
                 variant="outline"

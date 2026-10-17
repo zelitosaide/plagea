@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/confirm-dialog-provider";
 import {
@@ -41,6 +41,9 @@ type Sample = {
   equipmentType: string;
   path: string[];
   positions: number[];
+  // Só presente em amostras que ficaram sem `positions` na migração de
+  // dados do servidor antigo — a posição que a amostra tentava ocupar.
+  position?: string;
   entryDate: string;
   expiryDate: string;
   labEntryTime: string;
@@ -60,7 +63,14 @@ function daysBetween(a: string, b: string) {
 export default function SampleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const confirmDialog = useConfirm();
+
+  // "from" vem da lista (ver app/samples/page.tsx) com o URL exacto —
+  // página/filtro — a que "voltar" deve regressar. Sem isto, cai-se de
+  // volta em /samples sem nada, perdendo a página onde se estava.
+  const from = searchParams.get("from");
+  const backHref = from || "/samples";
 
   const [sample, setSample] = useState<Sample | null>(null);
   const [equipment, setEquipment] = useState<Equipment | null>(null);
@@ -144,7 +154,7 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
   if (notFound || !sample) {
     return (
       <div className="p-4 md:p-8 space-y-6">
-        <Link href="/samples">
+        <Link href={backHref}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar para Amostras
@@ -174,7 +184,7 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <Link href="/samples">
+          <Link href={backHref}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar para Amostras
@@ -208,7 +218,7 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
             {copied === "link" ? <Check className="h-4 w-4 text-primary" /> : <Link2 className="h-4 w-4" />}
             {copied === "link" ? "Link copiado!" : "Copiar Link"}
           </Button>
-          <Link href={`/samples/edit/${sample._id}`}>
+          <Link href={`/samples/edit/${sample._id}${from ? `?from=${encodeURIComponent(from)}` : ""}`}>
             <Button variant="outline" className="flex items-center gap-2">
               <Edit className="h-4 w-4" />
               Editar
@@ -293,23 +303,43 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium">Código de Localização</p>
-                <p className="text-lg font-semibold text-primary mt-1">{locationCode}</p>
+            {!sample.positions || sample.positions.length === 0 ? (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                <p className="text-sm text-destructive font-medium">
+                  Esta amostra ficou sem posição atribuída durante a migração de dados do servidor
+                  antigo (colidia com outra amostra na mesma posição) — precisa de resolução manual.
+                  {sample.position && (
+                    <>
+                      {" "}
+                      Posição pretendida:{" "}
+                      <span className="font-mono">
+                        {buildLocationCode(sample.equipmentCode, sample.path || [])}-{sample.position}
+                      </span>
+                      .
+                    </>
+                  )}
+                </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 flex items-center gap-2"
-                onClick={() => copyToClipboard(locationCode, "code")}
-                title="Copiar código de localização (ex.: para colar no REDCap)"
-              >
-                {copied === "code" ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-                {copied === "code" ? "Copiado!" : "Copiar"}
-              </Button>
-            </div>
+            ) : (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Código de Localização</p>
+                  <p className="text-lg font-semibold text-primary mt-1">{locationCode}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 flex items-center gap-2"
+                  onClick={() => copyToClipboard(locationCode, "code")}
+                  title="Copiar código de localização (ex.: para colar no REDCap)"
+                >
+                  {copied === "code" ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                  {copied === "code" ? "Copiado!" : "Copiar"}
+                </Button>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               {levelLabels.map((item) => (
@@ -320,7 +350,15 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
               ))}
               <div>
                 <p className="text-muted-foreground">Posições</p>
-                <p className="font-medium">{formatPositions(sample.positions)}</p>
+                <p className="font-medium">
+                  {sample.positions && sample.positions.length > 0 ? (
+                    formatPositions(sample.positions)
+                  ) : (
+                    <span className="text-destructive">
+                      Por atribuir{sample.position ? ` (pretendia ${sample.position})` : ""}
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
           </CardContent>
