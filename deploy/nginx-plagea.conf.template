@@ -1,0 +1,32 @@
+# Copia para /etc/nginx/conf.d/plagea-__ENVIRONMENT__.conf e substitui:
+#   __DOMAIN__      -> domínio deste ambiente (ex. plagea.exemplo.mz ou staging.plagea.exemplo.mz)
+#   __APP_PORT__    -> porta onde a app Docker está a escutar (ver PORT no .env deste ambiente)
+#   __ENVIRONMENT__ -> "production" ou "staging", só para o nome do ficheiro/logs
+#
+# O certbot (--nginx) edita este ficheiro automaticamente para acrescentar o
+# bloco 443/TLS depois de correres `certbot --nginx -d __DOMAIN__`.
+#
+# Usa este template quando CADA ambiente tem o seu próprio domínio ou
+# subdomínio. Se só tiveres um domínio e sem acesso ao DNS para criar um
+# subdomínio de staging, usa em vez disto o
+# nginx-plagea-staging-sameport.conf.template (ver docs/DEPLOYMENT.md
+# secção 4) para o ambiente de staging, mantendo este para a produção.
+
+server {
+    listen 80;
+    server_name __DOMAIN__;
+
+    access_log /var/log/nginx/plagea-__ENVIRONMENT__.access.log;
+    error_log  /var/log/nginx/plagea-__ENVIRONMENT__.error.log;
+
+    location / {
+        proxy_pass http://127.0.0.1:__APP_PORT__;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

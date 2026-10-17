@@ -16,7 +16,12 @@ export type SessionPayload = {
   departmentId: string | null;
 };
 
-export const SESSION_COOKIE_NAME = "plagea_session";
+// Configurável por ambiente (ver .env) — importante quando staging e
+// produção partilham o mesmo domínio/certificado, só distinguidos por
+// porta (ver docs/DEPLOYMENT.md secção 4): sem nomes diferentes, o
+// browser trataria os dois como o mesmo cookie, já que o scope de um
+// cookie não distingue porta.
+export const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || "plagea_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 dias
 
 function resolveSecret(): Uint8Array {

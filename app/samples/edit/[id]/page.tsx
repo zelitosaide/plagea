@@ -43,7 +43,18 @@ import { cn } from "@/lib/utils";
 import { PositionPicker } from "@/components/position-picker";
 import { TimePicker } from "@/components/time-picker";
 import { BoxDimensionsEditor } from "@/components/box-dimensions-editor";
-import { EQUIPMENT_TYPES, getEquipmentTypeConfig, toPathKey, type EquipmentType } from "@/lib/equipment-types";
+import {
+  EQUIPMENT_TYPES,
+  buildLocationCode,
+  formatPositions,
+  getEquipmentTypeConfig,
+  toPathKey,
+  type EquipmentType,
+} from "@/lib/equipment-types";
+
+// Tipos de amostra sólidos — não são guardados num criotubo, por isso não
+// faz sentido pedir uma quantidade em mL.
+const SOLID_SAMPLE_TYPES = ["Tissue", "Bloco", "Lamina"];
 
 type Equipment = {
   _id: string;
@@ -62,7 +73,7 @@ type ExistingSample = {
   _id: string;
   patientCode: string;
   path: string[];
-  position: string;
+  positions: number[];
 };
 
 export default function EditSamplePage({ params }: { params: Promise<{ id: string }> }) {
@@ -82,7 +93,8 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
     equipmentCode: "",
     equipmentType: "freezer" as EquipmentType,
     levelValues: {} as Record<string, string>,
-    position: "",
+    selectedPositions: [] as number[],
+    positionCount: "1",
     notes: "",
     entryDate: "",
     expiryDate: "",
@@ -104,6 +116,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
   const typeConfig = getEquipmentTypeConfig(formData.equipmentType);
   const path = typeConfig.levels.map((level) => formData.levelValues[level.key] || "");
   const pathComplete = path.every(Boolean);
+  const isSolidSample = SOLID_SAMPLE_TYPES.includes(formData.sampleType);
 
   const fetchSampleById = async () => {
     try {
@@ -121,6 +134,9 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
           "Tissue",
           "Urine",
           "Saliva",
+          "Bloco",
+          "Lamina",
+          "Aspirado celular",
         ];
 
         // Also check if it's in the loaded custom types
@@ -133,10 +149,13 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
           if (data.path?.[index]) levelValues[level.key] = data.path[index];
         });
 
+        const selectedPositions: number[] = data.positions || [];
         const baseData = {
           ...data,
           equipmentType: data.equipmentType || "freezer",
           levelValues,
+          selectedPositions,
+          positionCount: selectedPositions.length > 0 ? selectedPositions.length.toString() : "1",
         };
 
         if (data.sampleType && !isInPredefinedTypes && !isInCustomTypes) {
@@ -327,27 +346,95 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
   const occupiedInCurrentBox = pathComplete
     ? equipmentSamples
         .filter((sample) => JSON.stringify(sample.path) === JSON.stringify(path))
-        .map((sample) => ({
-          position: Number.parseInt(sample.position.replace("P", ""), 10),
-          patientCode: sample.patientCode,
-        }))
-        .filter((slot) => !Number.isNaN(slot.position))
+        .flatMap((sample) =>
+          (sample.positions || []).map((position) => ({
+            position,
+            patientCode: sample.patientCode,
+          }))
+        )
     : [];
 
   const boxRows = boxConfig?.rows || typeConfig.defaultBoxRows;
   const boxColumns = boxConfig?.columns || typeConfig.defaultBoxColumns;
 
-  const selectedPositionNumber = formData.position
-    ? Number.parseInt(formData.position.replace("P", ""), 10)
-    : undefined;
-
-  const occupiedSlotMatch = occupiedInCurrentBox.find(
-    (slot) => slot.position === selectedPositionNumber
+  const occupiedConflicts = occupiedInCurrentBox.filter((slot) =>
+    formData.selectedPositions.includes(slot.position)
   );
 
-  const locationComplete = !!formData.equipmentId && pathComplete && !!formData.position;
+  const handleSelectPosition = (pos: number) => {
+    const occupiedPositions = new Set(occupiedInCurrentBox.map((slot) => slot.position));
+
+    if (formData.selectedPositions.length === 0) {
+      const count = Math.max(1, Number.parseInt(formData.positionCount, 10) || 1);
+      const block: number[] = [];
+      for (let p = pos; block.length < count; p++) {
+        if (occupiedPositions.has(p)) break;
+        block.push(p);
+      }
+      if (block.length === 0) return;
+      if (block.length < count) {
+        toast.error(`Só há ${block.length} posição(ões) livre(s) consecutiva(s) a partir daqui.`);
+      }
+      setFormData((prev) => ({ ...prev, selectedPositions: block, positionCount: block.length.toString() }));
+      return;
+    }
+
+    setFormData((prev) => {
+      const selectedPositions = prev.selectedPositions.includes(pos)
+        ? prev.selectedPositions.filter((p) => p !== pos)
+        : [...prev.selectedPositions, pos].sort((a, b) => a - b);
+      return { ...prev, selectedPositions, positionCount: selectedPositions.length.toString() };
+    });
+  };
+
+  /** O campo "Nr. posições" funciona nos dois sentidos: seleccionar/
+   * desseleccionar na grelha actualiza-o (ver handleSelectPosition); e
+   * escrever aqui um número redimensiona a selecção — encolhe a partir do
+   * fim, ou cresce acrescentando as próximas posições livres depois da
+   * última seleccionada. */
+  const handlePositionCountChange = (value: string) => {
+    const count = Number.parseInt(value, 10);
+
+    if (!value || !Number.isInteger(count) || count <= 0) {
+      setFormData((prev) => ({ ...prev, positionCount: value }));
+      return;
+    }
+
+    const current = formData.selectedPositions;
+
+    if (count <= current.length) {
+      setFormData((prev) => ({
+        ...prev,
+        positionCount: value,
+        selectedPositions: current.slice(0, count),
+      }));
+      return;
+    }
+
+    const occupiedPositions = new Set(occupiedInCurrentBox.map((slot) => slot.position));
+    const maxPos = boxRows * boxColumns;
+    const needed = count - current.length;
+    const additions: number[] = [];
+    let p = current.length > 0 ? Math.max(...current) + 1 : 1;
+    while (additions.length < needed && p <= maxPos) {
+      if (!occupiedPositions.has(p) && !current.includes(p)) additions.push(p);
+      p++;
+    }
+    if (additions.length < needed) {
+      toast.error(`Só há ${current.length + additions.length} posição(ões) livre(s) disponível(eis).`);
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      positionCount: value,
+      selectedPositions: [...current, ...additions].sort((a, b) => a - b),
+    }));
+  };
+
+  const locationComplete =
+    !!formData.equipmentId && pathComplete && formData.selectedPositions.length > 0;
   const locationPreview = locationComplete
-    ? [formData.equipmentCode, ...path, formData.position].join("-")
+    ? buildLocationCode(formData.equipmentCode, path, formData.selectedPositions)
     : null;
 
   const legendExample = [
@@ -359,9 +446,11 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (occupiedSlotMatch) {
+    if (occupiedConflicts.length > 0) {
       toast.error(
-        `Esta posição já está ocupada pela amostra do paciente ${occupiedSlotMatch.patientCode}. Escolha outra posição.`
+        `As posições ${occupiedConflicts
+          .map((c) => `P${c.position}`)
+          .join(", ")} já estão ocupadas. Escolha outras posições.`
       );
       return;
     }
@@ -372,37 +461,26 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
         ? formData.customSampleType
         : formData.sampleType;
 
-    if (!entryDate || !expiryDate) {
-      toast.error("Seleccione a data de entrada e a data de validade");
+    if (!entryDate) {
+      toast.error("Seleccione a data de entrada");
       return;
     }
 
-    if (!pathComplete || !formData.equipmentId || !formData.position) {
+    if (!pathComplete || !formData.equipmentId || formData.selectedPositions.length === 0) {
       toast.error("Por favor, preencha todos campos obrigatórios");
       return;
     }
 
-    // Validate sample quantity specifically
-    if (!formData.sampleQuantity || parseFloat(formData.sampleQuantity) <= 0) {
+    // Validate sample quantity specifically (não aplicável a amostras sólidas)
+    if (!isSolidSample && (!formData.sampleQuantity || parseFloat(formData.sampleQuantity) <= 0)) {
       toast.error("Por favor, insira uma quantidade válida da amostra (maior que 0)");
-      return;
-    }
-
-    // Validate time fields
-    if (!formData.labEntryTime) {
-      toast.error("Por favor, insira a hora de entrada no laboratório");
-      return;
-    }
-
-    if (!formData.freezerStorageTime) {
-      toast.error("Por favor, insira a hora de armazenamento no congelador");
       return;
     }
 
     setLoading(true);
 
     try {
-      await fetch(`/api/samples/${id}`, {
+      const response = await fetch(`/api/samples/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -416,7 +494,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
           equipmentCode: formData.equipmentCode,
           equipmentType: formData.equipmentType,
           path,
-          position: formData.position,
+          positions: formData.selectedPositions,
           notes: formData.notes,
           labEntryTime: formData.labEntryTime,
           freezerStorageTime: formData.freezerStorageTime,
@@ -424,6 +502,13 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
           expiryDate: expiryDate?.toISOString().split("T")[0],
         }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error(result.error || "Falha ao actualizar a amostra");
+        return;
+      }
 
       // Save custom sample type if it's new
       if (
@@ -467,7 +552,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
       equipmentCode: code,
       equipmentType: (type as EquipmentType) || "freezer",
       levelValues: {},
-      position: "",
+      selectedPositions: [],
     }));
   };
 
@@ -699,6 +784,11 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                         <SelectItem value="Tissue">Tecido</SelectItem>
                         <SelectItem value="Urine">Urina</SelectItem>
                         <SelectItem value="Saliva">Saliva</SelectItem>
+                        <SelectItem value="Bloco">Bloco</SelectItem>
+                        <SelectItem value="Lamina">Lâmina</SelectItem>
+                        <SelectItem value="Aspirado celular">
+                          Aspirado celular
+                        </SelectItem>
                         {/* Custom sample types */}
                         {customSampleTypes.map((customType, index) => (
                           <SelectItem
@@ -725,22 +815,24 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="sampleQuantity">
-                      Quantidade no Criotubo (mL) *
-                    </Label>
-                    <Input
-                      id="sampleQuantity"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={formData.sampleQuantity}
-                      onChange={(e) =>
-                        handleInputChange("sampleQuantity", e.target.value)
-                      }
-                      placeholder="Ex: 1.5"
-                    />
-                  </div>
+                  {!isSolidSample && (
+                    <div className="space-y-2">
+                      <Label htmlFor="sampleQuantity">
+                        Quantidade no Criotubo (mL) *
+                      </Label>
+                      <Input
+                        id="sampleQuantity"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={formData.sampleQuantity}
+                        onChange={(e) =>
+                          handleInputChange("sampleQuantity", e.target.value)
+                        }
+                        placeholder="Ex: 1.5"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -782,7 +874,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div className="relative space-y-2">
-                  <Label>Data de Validade *</Label>
+                  <Label>Data de Validade</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -810,7 +902,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Hora de Entrada no Lab *</Label>
+                    <Label>Hora de Entrada no Lab</Label>
                     <TimePicker
                       value={formData.labEntryTime}
                       onChange={(value) => handleInputChange("labEntryTime", value)}
@@ -818,7 +910,7 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Hora de Armazenamento *</Label>
+                    <Label>Hora de Armazenamento</Label>
                     <TimePicker
                       value={formData.freezerStorageTime}
                       onChange={(value) => handleInputChange("freezerStorageTime", value)}
@@ -914,31 +1006,21 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                   ))}
 
                   <div className="space-y-2">
-                    <Label htmlFor="position">Posição *</Label>
+                    <Label htmlFor="positionCount">Nr. posições</Label>
                     <Input
-                      id="position"
+                      id="positionCount"
                       type="number"
-                      value={formData.position.toString().replace("P", "")}
-                      onChange={(e) =>
-                        handleInputChange("position", `P${e.target.value}`)
-                      }
-                      placeholder="Posição"
                       min="1"
-                      aria-invalid={!!occupiedSlotMatch}
-                      className={occupiedSlotMatch ? "border-destructive focus-visible:ring-destructive" : ""}
+                      value={formData.positionCount}
+                      onChange={(e) => handlePositionCountChange(e.target.value)}
+                      placeholder="1"
                     />
-                    {occupiedSlotMatch && (
-                      <p className="flex items-center gap-1 text-xs text-destructive">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        Posição já ocupada por {occupiedSlotMatch.patientCode}
-                      </p>
-                    )}
                   </div>
                 </div>
 
                 <div
                   className={`rounded-lg p-4 shadow-xs text-card-foreground ${
-                    occupiedSlotMatch
+                    occupiedConflicts.length > 0
                       ? "border border-destructive/40 bg-destructive/5"
                       : locationComplete
                         ? "border border-primary/30 bg-primary/5"
@@ -988,10 +1070,10 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                     </Popover>
                   </div>
                   <p className="text-sm mt-1">
-                    {occupiedSlotMatch ? (
+                    {occupiedConflicts.length > 0 ? (
                       <span className="text-destructive font-semibold flex items-center gap-1">
                         <AlertTriangle className="h-3.5 w-3.5" />
-                        Posição ocupada por {occupiedSlotMatch.patientCode}
+                        Posições ocupadas: {occupiedConflicts.map((c) => `P${c.position} (${c.patientCode})`).join(", ")}
                       </span>
                     ) : (
                       <span
@@ -1044,14 +1126,34 @@ export default function EditSamplePage({ params }: { params: Promise<{ id: strin
                             layout={typeConfig.positionLayout}
                           />
                         ) : (
-                          <PositionPicker
-                            occupied={occupiedInCurrentBox}
-                            selected={selectedPositionNumber}
-                            onSelect={(pos) => handleInputChange("position", `P${pos}`)}
-                            maxPosition={boxRows * boxColumns}
-                            columns={boxColumns}
-                            layout={typeConfig.positionLayout}
-                          />
+                          <>
+                            <PositionPicker
+                              occupied={occupiedInCurrentBox}
+                              selected={formData.selectedPositions}
+                              onSelect={handleSelectPosition}
+                              maxPosition={boxRows * boxColumns}
+                              columns={boxColumns}
+                              layout={typeConfig.positionLayout}
+                            />
+                            {formData.selectedPositions.length > 0 && (
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium">
+                                  Seleccionadas: {formatPositions(formData.selectedPositions)}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto p-0"
+                                  onClick={() =>
+                                    setFormData((prev) => ({ ...prev, selectedPositions: [], positionCount: "1" }))
+                                  }
+                                >
+                                  Limpar selecção
+                                </Button>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     )

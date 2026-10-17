@@ -28,7 +28,7 @@ import {
   Check,
   Link2,
 } from "lucide-react";
-import { buildLocationCode, getEquipmentTypeConfig } from "@/lib/equipment-types";
+import { buildLocationCode, formatPositions, getEquipmentTypeConfig } from "@/lib/equipment-types";
 
 type Sample = {
   _id: string;
@@ -40,7 +40,7 @@ type Sample = {
   equipmentCode: string;
   equipmentType: string;
   path: string[];
-  position: string;
+  positions: number[];
   entryDate: string;
   expiryDate: string;
   labEntryTime: string;
@@ -160,11 +160,11 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const isExpired = sample.expiryDate < today;
-  const isExpiringSoon = !isExpired && daysBetween(sample.expiryDate, today) <= 30;
+  const isExpired = !!sample.expiryDate && sample.expiryDate < today;
+  const isExpiringSoon = !isExpired && !!sample.expiryDate && daysBetween(sample.expiryDate, today) <= 30;
 
   const typeConfig = getEquipmentTypeConfig(sample.equipmentType);
-  const locationCode = buildLocationCode(sample.equipmentCode, sample.path || [], sample.position);
+  const locationCode = buildLocationCode(sample.equipmentCode, sample.path || [], sample.positions);
   const levelLabels = typeConfig.levels.map((level, index) => ({
     label: level.label,
     value: sample.path?.[index] || "—",
@@ -319,8 +319,8 @@ export default function SampleDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               ))}
               <div>
-                <p className="text-muted-foreground">Posição</p>
-                <p className="font-medium">{sample.position}</p>
+                <p className="text-muted-foreground">Posições</p>
+                <p className="font-medium">{formatPositions(sample.positions)}</p>
               </div>
             </div>
           </CardContent>

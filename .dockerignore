@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.github
+.vscode
+*.md
+.env
+.env.*
+!.env.example
+Dockerfile
+docker-compose*.yml
+Data_Statement_API_Vodacom*.docx

@@ -1,0 +1,45 @@
+# Para usar QUANDO não há subdomínio/DNS disponível para staging (ver
+# docs/DEPLOYMENT.md secção 4) — staging fica no MESMO domínio da
+# produção, distinguido só por uma porta externa alternativa.
+#
+# Reaproveita o certificado já emitido pelo certbot para o vhost de
+# produção (mesmo domínio = mesmo certificado, caminhos iguais). O
+# certbot não gere este bloco; não precisa de correr de novo aqui — a
+# renovação automática do vhost de produção já actualiza estes ficheiros
+# no mesmo sítio.
+#
+# Copia para /etc/nginx/conf.d/plagea-staging.conf e substitui:
+#   __DOMAIN__        -> o MESMO domínio usado pela produção
+#   __STAGING_PORT__  -> porta externa escolhida para staging (ex. 8443)
+#   __APP_PORT__      -> porta interna da app de staging (PORT no .env desse ambiente, ex. 3001)
+#
+# Abre a porta no firewall uma vez:
+#   firewall-cmd --permanent --add-port=__STAGING_PORT__/tcp && firewall-cmd --reload
+#
+# IMPORTANTE: o .env do ambiente de staging precisa de
+# SESSION_COOKIE_NAME diferente do de produção (ver .env.example) —
+# sem isso, o browser trata os cookies de sessão dos dois ambientes como
+# o mesmo, já que o scope de um cookie não distingue porta.
+
+server {
+    listen __STAGING_PORT__ ssl;
+    listen [::]:__STAGING_PORT__ ssl;
+    server_name __DOMAIN__;
+
+    ssl_certificate     /etc/letsencrypt/live/__DOMAIN__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN__/privkey.pem;
+
+    access_log /var/log/nginx/plagea-staging.access.log;
+    error_log  /var/log/nginx/plagea-staging.error.log;
+
+    location / {
+        proxy_pass http://127.0.0.1:__APP_PORT__;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

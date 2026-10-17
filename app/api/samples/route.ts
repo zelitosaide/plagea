@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb"
 import { type NextRequest, NextResponse } from "next/server"
 import { getDepartmentFilter, requireSession } from "@/lib/auth"
+import { findConflicts, reserveSlots } from "@/lib/sample-slots"
 
 export async function GET(request: NextRequest) {
   const auth = await requireSession(request)
@@ -68,16 +69,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Equipamento não encontrado" }, { status: 404 })
     }
 
-    // Verifica se já existe uma amostra na mesma localização
-    const existingSample = await auth.db.collection("samples").findOne({
-      equipmentId: body.equipmentId,
-      path: body.path,
-      position: body.position,
-    })
+    const positions: unknown = body.positions
+    if (
+      !Array.isArray(positions) ||
+      positions.length === 0 ||
+      !positions.every((p) => Number.isInteger(p) && p > 0) ||
+      new Set(positions).size !== positions.length
+    ) {
+      return NextResponse.json({ error: "Posições inválidas" }, { status: 400 })
+    }
 
-    if (existingSample) {
+    // Verifica se alguma das posições pedidas já está ocupada por outra amostra
+    const conflicts = await findConflicts(auth.db, body.equipmentId, body.path, positions)
+    if (conflicts.length > 0) {
+      const conflictingSample = await auth.db
+        .collection("samples")
+        .findOne({ _id: new ObjectId(conflicts[0].sampleId) })
       return NextResponse.json(
-        { error: "Localização já ocupada por outra amostra." },
+        {
+          error: `Posição(ões) ${conflicts.map((c) => `P${c.position}`).join(", ")} já ocupada(s) por ${
+            conflictingSample?.patientCode || "outra amostra"
+          }.`,
+        },
         { status: 400 }
       )
     }
@@ -86,16 +99,32 @@ export async function POST(request: NextRequest) {
 
     const result = await auth.db.collection("samples").insertOne({
       ...body,
+      positions,
       departmentId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     })
 
+    const reserveResult = await reserveSlots(auth.db, {
+      sampleId: result.insertedId,
+      equipmentId: body.equipmentId,
+      path: body.path,
+      positions,
+    })
+
+    if (!reserveResult.ok) {
+      await auth.db.collection("samples").deleteOne({ _id: result.insertedId })
+      return NextResponse.json(
+        { error: "Conflito de concorrência ao reservar a posição. Tente novamente." },
+        { status: 409 }
+      )
+    }
+
     const newSample = await auth.db.collection("samples").findOne({ _id: result.insertedId })
 
     await auth.db.collection("equipment").updateOne(
       { _id: new ObjectId(body.equipmentId) },
-      { $inc: { currentSamples: 1 } }
+      { $inc: { currentSamples: positions.length } }
     )
 
     return NextResponse.json(newSample, { status: 201 })

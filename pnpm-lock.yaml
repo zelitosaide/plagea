@@ -138,9 +138,6 @@ importers:
       react:
         specifier: 19.3.1
         version: 19.3.1
-      react-day-picker:
-        specifier: latest
-        version: 9.7.0(react@19.3.1)
       react-dom:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
@@ -317,9 +314,6 @@ packages:
   '@babel/runtime@7.27.6':
     resolution: {integrity: sha512-vbavdySgbTTrmFE+EsiqUTzlOr5bzlnJtUv9PynGCAKvfQqjIXbvFdumPM/GxMDfyuGMJaJAU6TO4zc1Jf1i8Q==}
     engines: {node: '>=6.9.0'}
-
-  '@date-fns/tz@1.2.0':
-    resolution: {integrity: sha512-LBrd7MiJZ9McsOgxqWX7AaxrDjcFVjWH/tIKJd7pnR7McaslGYOP1QmmiBXdJH/H/yLCT+rcQ7FaPBUxRGUtrg==}
 
   '@emnapi/runtime@1.11.3':
     resolution: {integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==}
@@ -1785,9 +1779,6 @@ packages:
     resolution: {integrity: sha512-ndfJ/JxxMd3nw31uyKoY2naivF+r29V+Lc0svZxe1JvvIRmi8hUsrMvdOwgS1o6uBHmiz91geQ0ylPP0aj1VUA==}
     engines: {node: '>=12'}
 
-  date-fns-jalali@4.1.0-0:
-    resolution: {integrity: sha512-hTIP/z+t+qKwBDcmmsnmjWTduxCg+5KfdqWQvb2X/8C9+knYY6epN/pfxdDuyVlSVeFz0sM5eEfwIUQ70U4ckg==}
-
   date-fns@4.1.0:
     resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
 
@@ -2056,12 +2047,6 @@ packages:
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
-
-  react-day-picker@9.7.0:
-    resolution: {integrity: sha512-urlK4C9XJZVpQ81tmVgd2O7lZ0VQldZeHzNejbwLWZSkzHH498KnArT0EHNfKBOWwKc935iMLGZdxXPRISzUxQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      react: '>=16.8.0'
 
   react-dom@19.3.1:
     resolution: {integrity: sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==}
@@ -2693,8 +2678,6 @@ snapshots:
     optional: true
 
   '@babel/runtime@7.27.6': {}
-
-  '@date-fns/tz@1.2.0': {}
 
   '@emnapi/runtime@1.11.3':
     dependencies:
@@ -4225,8 +4208,6 @@ snapshots:
 
   d3-timer@3.0.1: {}
 
-  date-fns-jalali@4.1.0-0: {}
-
   date-fns@4.1.0: {}
 
   decimal.js-light@2.5.1: {}
@@ -4430,13 +4411,6 @@ snapshots:
       react-is: 16.13.1
 
   punycode@2.3.1: {}
-
-  react-day-picker@9.7.0(react@19.3.1):
-    dependencies:
-      '@date-fns/tz': 1.2.0
-      date-fns: 4.1.0
-      date-fns-jalali: 4.1.0-0
-      react: 19.3.1
 
   react-dom@19.3.1(react@19.3.1):
     dependencies:

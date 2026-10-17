@@ -1,0 +1,37 @@
+# MongoDB fica fora dos containers (instalação nativa no host, só em
+# 127.0.0.1:27017) — por isso a app usa network_mode "host": partilha o
+# namespace de rede da máquina em vez de uma rede isolada, o que lhe permite
+# falar com o Mongo em 127.0.0.1 sem o expor a nenhuma subnet de bridge.
+#
+# A app escuta na porta definida por PORT (ver .env) directamente no host;
+# o Nginx do host é que faz o proxy/TLS para fora.
+#
+# Em desenvolvimento local, "docker compose build && docker compose up"
+# usa as imagens locais (APP_IMAGE/MIGRATE_IMAGE têm valores por defeito).
+# Em produção/staging, o deploy.sh escreve APP_IMAGE/MIGRATE_IMAGE no .env
+# a apontar para ghcr.io, e usa-se "docker compose pull" em vez de build.
+
+services:
+  app:
+    build:
+      context: .
+      target: runner
+    image: ${APP_IMAGE:-plagea-app:latest}
+    network_mode: host
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  # Não arranca com "docker compose up" (profile "tools") — serve só para
+  # correr os scripts em scripts/*.mjs sob pedido, ex.:
+  #   docker compose run --rm migrate scripts/migrate-sample-slots.mjs
+  migrate:
+    build:
+      context: .
+      target: builder
+    image: ${MIGRATE_IMAGE:-plagea-app:latest-tools}
+    network_mode: host
+    env_file:
+      - .env
+    entrypoint: ["node"]
+    profiles: ["tools"]

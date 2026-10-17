@@ -9,7 +9,7 @@ export type OccupiedSlot = {
 
 type PositionPickerProps = {
   occupied: OccupiedSlot[]
-  selected?: number
+  selected: number[]
   onSelect: (position: number) => void
   maxPosition?: number
   columns?: number
@@ -48,7 +48,7 @@ export function PositionPicker({
   const renderButton = (pos: number) => {
     const patientCode = occupiedMap.get(pos)
     const isOccupied = !!patientCode
-    const isSelected = selected === pos
+    const isSelected = selected.includes(pos)
 
     return (
       <button

@@ -85,10 +85,38 @@ export function toPathKey(path: string[]): string {
   return path.join("/");
 }
 
+/** Comprime um array de posições ordenadas em blocos contíguos para
+ * apresentação, ex. [1,2,3,4,6,7] -> "P1-4,P6-7". Só para visualização —
+ * nunca deve ser parseada de volta (a fonte de dados é sempre o array
+ * `positions` original). */
+export function formatPositions(positions: number[]): string {
+  if (!positions || positions.length === 0) return "";
+  const sorted = [...positions].sort((a, b) => a - b);
+  const blocks: string[] = [];
+  let start = sorted[0];
+  let end = sorted[0];
+
+  for (let i = 1; i <= sorted.length; i++) {
+    const current = sorted[i];
+    if (current === end + 1) {
+      end = current;
+      continue;
+    }
+    blocks.push(start === end ? `P${start}` : `P${start}-${end}`);
+    if (current !== undefined) {
+      start = current;
+      end = current;
+    }
+  }
+
+  return blocks.join(",");
+}
+
 /** Monta o código de localização completo, ex. "F1-S1-D-B1-P5" ou
- * "AB1-G3-L2-P15", a partir do código do equipamento, do path e da posição. */
-export function buildLocationCode(equipmentCode: string, path: string[], position?: string): string {
+ * "AB1-G3-L2-P1-4,P6-7", a partir do código do equipamento, do path e das
+ * posições ocupadas. */
+export function buildLocationCode(equipmentCode: string, path: string[], positions?: number[]): string {
   const parts = [equipmentCode, ...path];
-  if (position) parts.push(position);
+  if (positions && positions.length > 0) parts.push(formatPositions(positions));
   return parts.join("-");
 }

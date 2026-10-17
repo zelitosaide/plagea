@@ -35,6 +35,7 @@ import {
 } from "next/navigation";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/confirm-dialog-provider";
+import { buildLocationCode } from "@/lib/equipment-types";
 
 interface Sample {
   _id: string;
@@ -45,7 +46,7 @@ interface Sample {
   equipmentId: string;
   equipmentCode: string;
   path: string[];
-  position: string;
+  positions: number[];
   entryDate: string;
   expiryDate: string;
   labEntryTime: string;
@@ -339,6 +340,13 @@ export default function SamplesPage() {
                   <SelectItem value="DNA">DNA</SelectItem>
                   <SelectItem value="RNA">RNA</SelectItem>
                   <SelectItem value="Tissue">Tecido</SelectItem>
+                  <SelectItem value="Urine">Urina</SelectItem>
+                  <SelectItem value="Saliva">Saliva</SelectItem>
+                  <SelectItem value="Bloco">Bloco</SelectItem>
+                  <SelectItem value="Lamina">Lâmina</SelectItem>
+                  <SelectItem value="Aspirado celular">
+                    Aspirado celular
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterProject} onValueChange={handleProjectChange}>
@@ -444,7 +452,7 @@ export default function SamplesPage() {
                                 <span className="font-medium">
                                   Localização:
                                 </span>{" "}
-                                {[sample.equipmentCode, ...(sample.path || []), sample.position].join("-")}
+                                {buildLocationCode(sample.equipmentCode, sample.path || [], sample.positions)}
                               </p>
                             </div>
                             <div>
